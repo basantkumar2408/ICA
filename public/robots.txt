@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ideal-children-academy-ica.onrender.com/sitemap.xml
