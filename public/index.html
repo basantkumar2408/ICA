@@ -8,7 +8,7 @@
 <meta name="keywords" content="Ideal Children Academy Batrauliya, ICA Paharpur, school East Champaran, best school Batrauliya 845458"/>
 <meta name="robots" content="index, follow"/>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"School","name":"Ideal Children Academy Batrauliya","address":{"@type":"PostalAddress","streetAddress":"Batrauliya","addressLocality":"Paharpur","addressRegion":"East Champaran, Bihar","postalCode":"845458","addressCountry":"IN"}}</script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
   #publicFormModal{
     position: fixed;
@@ -102,65 +102,89 @@ html{scroll-behavior:smooth;}
   --shadow:0 4px 16px rgba(10,22,40,.10);
   --shadow-lg:0 12px 40px rgba(10,22,40,.15);
   --r:10px;--rl:14px;
+  /* New landing-page palette (public site redesign only — Admin Panel keeps --navy/--gold as-is) */
+  --pub-primary:#1E3A8A;--pub-secondary:#2563EB;--pub-accent:#FACC15;
+  --pub-shadow:0 10px 30px rgba(30,58,138,.12);--rxl:20px;
 }
 body{font-family:"Inter",sans-serif;color:var(--text);background:var(--white);line-height:1.5;}
-nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(10,22,40,.97);backdrop-filter:blur(12px);border-bottom:1px solid rgba(201,152,42,.18);}
-.nav-inner{max-width:1200px;margin:auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px;}
+/* ═══ Landing Page Redesign (public site only — Admin Panel CSS below is untouched) ═══ */
+.topbar{background:var(--pub-primary);color:rgba(255,255,255,.88);font-size:12.5px;position:fixed;top:0;left:0;right:0;z-index:1001;}
+.topbar-inner{max-width:1200px;margin:auto;padding:7px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
+.topbar-left{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.topbar-left a{color:rgba(255,255,255,.88);text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:500;}
+.topbar-left a:hover{color:var(--pub-accent);}
+.topbar-social{display:flex;align-items:center;gap:10px;}
+.topbar-social a{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;font-size:12px;transition:all .2s;}
+.topbar-social a:hover{background:var(--pub-accent);color:var(--pub-primary);transform:translateY(-1px);}
+nav{position:fixed;top:30px;left:0;right:0;z-index:1000;background:rgba(30,58,138,.97);backdrop-filter:blur(12px);border-bottom:1px solid rgba(250,204,21,.18);transition:top .25s;}
+nav.scrolled{top:0;box-shadow:0 4px 20px rgba(0,0,0,.15);}
+.nav-inner{max-width:1200px;margin:auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:66px;}
 .nav-logo{display:flex;align-items:center;gap:11px;text-decoration:none;}
-.nl-icon{width:40px;height:40px;background:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);font-size:13px;flex-shrink:0;}
-.nl-name{color:var(--white);font-size:14px;font-weight:600;line-height:1.25;}
-.nl-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px;}
+.nl-icon{width:42px;height:42px;background:var(--pub-accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--pub-primary);font-size:13px;flex-shrink:0;overflow:hidden;font-family:"Poppins",sans-serif;}
+.nl-icon img{width:100%;height:100%;object-fit:cover;}
+.nl-name{color:var(--white);font-size:14.5px;font-weight:700;line-height:1.25;font-family:"Poppins",sans-serif;}
+.nl-sub{font-size:10px;color:rgba(255,255,255,.5);margin-top:1px;}
 .nav-links{display:flex;gap:2px;list-style:none;}
-.nav-links a{color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:500;padding:7px 11px;border-radius:7px;transition:all .15s;}
-.nav-links a:hover,.nav-links a.active{color:var(--gold-light);background:rgba(201,152,42,.12);}
+.nav-links a{color:rgba(255,255,255,.78);text-decoration:none;font-size:13px;font-weight:500;padding:8px 12px;border-radius:8px;transition:all .15s;}
+.nav-links a:hover,.nav-links a.active{color:var(--pub-primary);background:var(--pub-accent);}
 .nav-cta{display:flex;gap:8px;align-items:center;}
-.btn-nav{padding:8px 15px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;text-decoration:none;display:inline-block;}
-.btn-nav-outline{background:transparent;border:1.5px solid rgba(201,152,42,.4);color:var(--gold-light);}
-.btn-nav-gold{background:var(--gold);color:var(--navy);}
-.btn-nav-gold:hover{background:var(--gold-light);}
-.btn-admission-nav{background:linear-gradient(135deg,#e8b84b,#c9982a);color:var(--navy);padding:8px 15px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;display:inline-block;animation:pulsenav 2s infinite;}
-@keyframes pulsenav{0%,100%{box-shadow:0 0 0 0 rgba(232,184,75,.4);}50%{box-shadow:0 0 0 6px rgba(232,184,75,0);}}
+.btn-nav{padding:9px 17px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .18s;text-decoration:none;display:inline-block;}
+.btn-nav-outline{background:transparent;border:1.5px solid rgba(255,255,255,.35);color:#fff;}
+.btn-nav-outline:hover{border-color:var(--pub-accent);color:var(--pub-accent);}
+.btn-nav-gold{background:var(--pub-accent);color:var(--pub-primary);font-weight:700;}
+.btn-nav-gold:hover{background:#fff;transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.2);}
+.btn-admission-nav{background:linear-gradient(135deg,var(--pub-accent),#fde047);color:var(--pub-primary);padding:9px 18px;border-radius:100px;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;display:inline-block;animation:pulsenav 2s infinite;}
+@keyframes pulsenav{0%,100%{box-shadow:0 0 0 0 rgba(250,204,21,.45);}50%{box-shadow:0 0 0 7px rgba(250,204,21,0);}}
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;}
 .hamburger span{width:22px;height:2px;background:var(--white);border-radius:2px;}
-.mobile-menu{display:none;position:absolute;top:64px;left:0;right:0;background:rgba(10,22,40,.98);border-top:1px solid rgba(255,255,255,.06);padding:10px 0 16px;}
+.mobile-menu{display:none;position:absolute;top:66px;left:0;right:0;background:rgba(30,58,138,.98);border-top:1px solid rgba(255,255,255,.08);padding:10px 0 16px;}
 .mobile-menu.open{display:block;}
-.mobile-menu a{display:block;padding:11px 24px;color:rgba(255,255,255,.75);text-decoration:none;font-size:14px;}
-.hero{min-height:100vh;background:linear-gradient(135deg,var(--navy) 0%,#14305a 55%,#0d2647 100%);display:flex;align-items:center;position:relative;overflow:hidden;padding-top:64px;}
-.hero-pattern{position:absolute;inset:0;opacity:.04;background-image:radial-gradient(circle,#c9982a 1px,transparent 1px);background-size:40px 40px;}
-.hero-glow{position:absolute;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(201,152,42,.12) 0%,transparent 70%);}
+.mobile-menu a{display:block;padding:12px 24px;color:rgba(255,255,255,.85);text-decoration:none;font-size:14px;}
+.hero{min-height:100vh;background:linear-gradient(135deg,var(--pub-primary) 0%,var(--pub-secondary) 65%,#1e40af 100%);display:flex;align-items:center;position:relative;overflow:hidden;padding-top:96px;}
+.hero-pattern{position:absolute;inset:0;opacity:.06;background-image:radial-gradient(circle,#FACC15 1px,transparent 1px);background-size:40px 40px;}
+.hero-glow{position:absolute;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(250,204,21,.16) 0%,transparent 70%);}
 .hero-inner{max-width:1200px;margin:auto;padding:80px 24px;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;position:relative;}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(201,152,42,.13);border:1px solid rgba(201,152,42,.28);color:var(--gold-light);padding:5px 14px;border-radius:100px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:22px;}
-.hero h1{font-family:"Playfair Display",serif;font-size:clamp(36px,4.5vw,58px);font-weight:800;color:var(--white);line-height:1.12;margin-bottom:14px;}
-.hero h1 em{color:var(--gold-light);font-style:normal;}
-.hero-location{color:rgba(255,255,255,.5);font-size:13.5px;margin-bottom:22px;}
-.hero-desc{color:rgba(255,255,255,.72);font-size:16px;line-height:1.75;margin-bottom:34px;max-width:480px;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(250,204,21,.16);border:1px solid rgba(250,204,21,.35);color:var(--pub-accent);padding:6px 16px;border-radius:100px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:22px;font-family:"Poppins",sans-serif;}
+.hero h1{font-family:"Poppins",sans-serif;font-size:clamp(34px,4.5vw,54px);font-weight:800;color:var(--white);line-height:1.15;margin-bottom:14px;}
+.hero h1 em{color:var(--pub-accent);font-style:normal;}
+.hero-location{color:rgba(255,255,255,.6);font-size:13.5px;margin-bottom:22px;}
+.hero-desc{color:rgba(255,255,255,.82);font-size:16px;line-height:1.75;margin-bottom:34px;max-width:480px;}
 .hero-btns{display:flex;gap:12px;flex-wrap:wrap;}
-.btn-primary{padding:13px 28px;background:var(--gold);color:var(--navy);border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .2s;display:inline-block;font-family:"Inter",sans-serif;}
-.btn-primary:hover{background:var(--gold-light);transform:translateY(-1px);}
-.btn-ghost{padding:13px 28px;background:transparent;color:var(--white);border:2px solid rgba(255,255,255,.25);border-radius:9px;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .2s;display:inline-block;}
+.btn-primary{padding:14px 30px;background:var(--pub-accent);color:var(--pub-primary);border:none;border-radius:100px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .2s;display:inline-block;font-family:"Poppins",sans-serif;}
+.btn-primary:hover{background:#fde047;transform:translateY(-2px);box-shadow:0 10px 24px rgba(250,204,21,.35);}
+.btn-ghost{padding:14px 30px;background:rgba(255,255,255,.08);color:var(--white);border:2px solid rgba(255,255,255,.3);border-radius:100px;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .2s;display:inline-block;}
+.btn-ghost:hover{background:rgba(255,255,255,.16);border-color:#fff;}
 .hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:42px;}
-.hero-stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:18px 14px;text-align:center;}
-.hero-stat-num{font-family:"Playfair Display",serif;font-size:28px;font-weight:700;color:var(--gold-light);}
-.hero-stat-label{font-size:11.5px;color:rgba(255,255,255,.45);margin-top:4px;}
-.hero-card{background:rgba(255,255,255,.05);backdrop-filter:blur(12px);border:1px solid rgba(201,152,42,.18);border-radius:20px;padding:36px;}
-.hc-avatar{width:72px;height:72px;background:linear-gradient(135deg,var(--gold),var(--gold-light));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 14px;}
-.hc-name{font-family:"Playfair Display",serif;font-size:17px;color:var(--white);text-align:center;}
+.hero-stat{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:18px 14px;text-align:center;transition:transform .2s;}
+.hero-stat:hover{transform:translateY(-3px);background:rgba(255,255,255,.12);}
+.hero-stat-num{font-family:"Poppins",sans-serif;font-size:28px;font-weight:800;color:var(--pub-accent);}
+.hero-stat-label{font-size:11.5px;color:rgba(255,255,255,.6);margin-top:4px;}
+.hero-card{background:rgba(255,255,255,.07);backdrop-filter:blur(14px);border:1px solid rgba(250,204,21,.2);border-radius:var(--rxl);padding:28px;position:relative;min-height:380px;display:flex;align-items:center;justify-content:center;overflow:visible;}
+.hero-visual-glow{position:absolute;inset:0;background:radial-gradient(circle at 60% 30%,rgba(250,204,21,.18),transparent 60%);border-radius:var(--rxl);}
+.hero-building-img{width:100%;height:340px;object-fit:cover;border-radius:16px;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.hero-building-placeholder{width:100%;height:340px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.03));display:flex;align-items:center;justify-content:center;font-size:80px;position:relative;}
+.hero-students-img{position:absolute;bottom:-24px;left:-24px;width:150px;height:150px;object-fit:cover;border-radius:16px;border:4px solid var(--white);box-shadow:0 12px 30px rgba(0,0,0,.35);}
+.hc-avatar{width:72px;height:72px;background:linear-gradient(135deg,var(--pub-accent),#fde047);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 14px;}
+.hc-name{font-family:"Poppins",sans-serif;font-size:17px;color:var(--white);text-align:center;}
 .hc-title{font-size:11.5px;color:var(--gold-light);text-align:center;letter-spacing:.05em;margin-bottom:20px;margin-top:3px;}
 .hc-quote{font-size:14px;line-height:1.8;color:rgba(255,255,255,.75);font-style:italic;border-left:3px solid var(--gold);padding-left:15px;}
 section{padding:84px 0;}
 .container{max-width:1200px;margin:auto;padding:0 24px;}
-.sec-eyebrow{font-size:11.5px;font-weight:700;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;}
-.sec-title{font-family:"Playfair Display",serif;font-size:clamp(26px,3vw,40px);font-weight:700;color:var(--navy);margin-bottom:14px;line-height:1.25;}
+.sec-eyebrow{font-size:11.5px;font-weight:700;color:var(--pub-secondary);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;font-family:"Poppins",sans-serif;}
+.sec-title{font-family:"Poppins",sans-serif;font-size:clamp(26px,3vw,40px);font-weight:700;color:var(--pub-primary);margin-bottom:14px;line-height:1.25;}
 .sec-sub{font-size:15.5px;color:var(--muted);line-height:1.68;max-width:540px;}
 .center{text-align:center;}.center .sec-sub{margin:0 auto;}
 .about{background:var(--cream);}
 .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;}
 .about-features{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:30px;}
-.about-feat{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px;}
-.about-feat-icon{font-size:22px;margin-bottom:9px;}
+.about-feat{background:var(--white);border:1px solid var(--border);border-radius:var(--rxl);padding:22px 18px;transition:all .25s cubic-bezier(.2,.8,.2,1);cursor:default;}
+.about-feat:hover{transform:translateY(-6px);box-shadow:var(--pub-shadow);border-color:var(--pub-secondary);}
+.about-feat-icon{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--pub-primary),var(--pub-secondary));display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;transition:transform .25s;}
+.about-feat:hover .about-feat-icon{transform:scale(1.1) rotate(-4deg);}
+.about-feat h4{font-family:"Poppins",sans-serif;}
+.about-visual{background:linear-gradient(145deg,var(--pub-primary),var(--pub-secondary));border-radius:var(--rxl);aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
 .about-feat h4{font-weight:600;font-size:13.5px;margin-bottom:4px;}
 .about-feat p{font-size:12.5px;color:var(--muted);}
-.about-visual{background:linear-gradient(145deg,var(--navy),#1a3a6e);border-radius:18px;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
 .about-visual-icon{font-size:60px;}
 .about-visual-name{font-family:"Playfair Display",serif;font-size:17px;color:var(--white);}
 .about-visual-sub{font-size:12px;color:rgba(255,255,255,.4);}
@@ -228,6 +252,16 @@ section{padding:84px 0;}
 .submit-btn:disabled{opacity:.6;cursor:not-allowed;}
 .form-success{display:none;background:#dcfce7;border:1px solid #a8d5b5;color:var(--green);padding:13px;border-radius:8px;font-size:13.5px;font-weight:500;text-align:center;margin-top:12px;}
 .form-err{display:none;background:var(--red-bg);border:1px solid #fecaca;color:var(--red);padding:13px;border-radius:8px;font-size:13.5px;margin-top:12px;}
+.cta-banner{background:linear-gradient(120deg,var(--pub-primary),var(--pub-secondary));padding:56px 0;}
+.cta-banner-inner{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+.cta-title{font-family:"Poppins",sans-serif;font-size:clamp(22px,2.6vw,32px);font-weight:800;color:#fff;margin-bottom:6px;}
+.cta-sub{color:rgba(255,255,255,.82);font-size:14.5px;max-width:480px;}
+.cta-enquire-btn{white-space:nowrap;}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+.reveal-zoom{opacity:0;transform:scale(.92);transition:opacity .6s ease,transform .6s ease;}
+.reveal-zoom.in-view{opacity:1;transform:scale(1);}
+@media (prefers-reduced-motion: reduce){.reveal,.reveal-zoom{opacity:1;transform:none;transition:none;}}
 footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
 .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:48px;margin-bottom:40px;}
 .footer-brand-name{font-family:"Playfair Display",serif;font-size:17px;color:var(--white);font-weight:700;margin-bottom:10px;}
@@ -413,7 +447,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
 @media(max-width:960px){
   .hero-inner,.about-grid,.principal-grid,.contact-grid,.footer-grid{grid-template-columns:1fr;}
   .hero-card{display:none;}
-  .hero{min-height:auto;padding-top:84px;padding-bottom:56px;}
+  .hero{min-height:auto;padding-top:74px;padding-bottom:56px;}
   .hero-inner{padding:36px 24px;gap:32px;}
   section{padding:52px 0;}
   .notices-pub,.gallery-sec,.testi-sec{padding:52px 0;}
@@ -423,6 +457,9 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
   .stat-grid{grid-template-columns:1fr 1fr;}
   .nav-links,.nav-cta{display:none;}
   .hamburger{display:flex;}
+  .topbar{display:none;}
+  nav{top:0;}
+  .cta-banner-inner{flex-direction:column;text-align:center;}
 }
 @media(max-width:600px){
   .fac-grid,.about-features,.modal-dg,.notices-pub-grid,.steps-grid,.fg-row,.fg-row3{grid-template-columns:1fr;}
@@ -479,9 +516,22 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
 <body>
 <div class="session-warn" id="sessionWarn">Session expiring soon. <a href="#" onclick="resetSession(event)" style="color:#fcd34d;font-weight:700;">Stay Logged In</a></div>
 <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">Loading...</div></div>
+<div class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-left">
+      <a href="tel:+911234567890" id="topbar-phone-link"><span>&#128222;</span><span id="topbar-phone-text">Call Us</span></a>
+      <a href="mailto:info@icabatrauliya.com" id="topbar-email-link"><span>&#9993;&#65039;</span><span id="topbar-email-text">info@icabatrauliya.com</span></a>
+    </div>
+    <div class="topbar-social" id="topbar-social">
+      <a href="#" id="topbar-fb" style="display:none;" target="_blank" rel="noopener" aria-label="Facebook">f</a>
+      <a href="#" id="topbar-ig" style="display:none;" target="_blank" rel="noopener" aria-label="Instagram">&#128247;</a>
+      <a href="#" id="topbar-yt" style="display:none;" target="_blank" rel="noopener" aria-label="YouTube">&#9658;</a>
+    </div>
+  </div>
+</div>
 <nav id="mainNav">
   <div class="nav-inner">
-    <a href="#home" class="nav-logo"><div class="nl-icon">ICA</div><div><div class="nl-name">Ideal Children Academy</div><div class="nl-sub">Batrauliya - East Champaran</div></div></a>
+    <a href="#home" class="nav-logo"><div class="nl-icon" id="nav-logo-icon">ICA</div><div><div class="nl-name">Ideal Children Academy</div><div class="nl-sub">Batrauliya - East Champaran</div></div></a>
     <ul class="nav-links">
       <li><a href="#home" class="active">Home</a></li><li><a href="#about">About</a></li>
       <li><a href="#facilities">Facilities</a></li><li><a href="#notices">Notices</a></li>
@@ -518,16 +568,16 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
         <button class="btn-ghost" onclick="document.getElementById('resultSection').scrollIntoView({behavior:'smooth'})">Check Result / Status</button>
       </div>
       <div class="hero-stats">
-        <div class="hero-stat"><div class="hero-stat-num">500+</div><div class="hero-stat-label">Students</div></div>
-        <div class="hero-stat"><div class="hero-stat-num">25+</div><div class="hero-stat-label">Teachers</div></div>
-        <div class="hero-stat"><div class="hero-stat-num">100%</div><div class="hero-stat-label">Result</div></div>
+        <div class="hero-stat reveal"><div class="hero-stat-num" data-count="500" data-suffix="+">0</div><div class="hero-stat-label">Students</div></div>
+        <div class="hero-stat reveal"><div class="hero-stat-num" data-count="25" data-suffix="+">0</div><div class="hero-stat-label">Teachers</div></div>
+        <div class="hero-stat reveal"><div class="hero-stat-num" data-count="100" data-suffix="%">0</div><div class="hero-stat-label">Result</div></div>
       </div>
     </div>
-    <div class="hero-card">
-      <div class="hc-avatar">&#127891;</div>
-      <div class="hc-name">Principal's Message</div>
-      <div class="hc-title">Ideal Children Academy - Batrauliya</div>
-      <blockquote class="hc-quote">"Education is not merely the filling of a bucket, but the lighting of a fire. At ICA, we ignite that spark in every child empowering them with knowledge, values, and the courage to dream beyond boundaries."</blockquote>
+    <div class="hero-card reveal-zoom">
+      <div class="hero-visual-glow"></div>
+      <img id="pub-hero-building" class="hero-building-img" src="" style="display:none;" alt="Ideal Children Academy campus"/>
+      <div class="hero-building-placeholder" id="hero-building-placeholder">&#127979;</div>
+      <img id="pub-hero-students" class="hero-students-img" src="" style="display:none;" alt="Students at ICA"/>
     </div>
   </div>
 </section>
@@ -580,11 +630,12 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
         <div class="sec-eyebrow">Who We Are</div>
         <h2 class="sec-title">Building Bright Futures in East Champaran</h2>
         <p class="sec-sub">Ideal Children Academy Batrauliya is a premier educational institution committed to holistic development of every child.</p>
-        <div class="about-features">
-          <div class="about-feat"><div class="about-feat-icon">&#128218;</div><h4>Quality Curriculum</h4><p>CBSE-aligned syllabus with conceptual learning</p></div>
-          <div class="about-feat"><div class="about-feat-icon">&#127942;</div><h4>Academic Excellence</h4><p>Consistent top results year after year</p></div>
-          <div class="about-feat"><div class="about-feat-icon">&#127912;</div><h4>Co-curricular</h4><p>Sports, arts, music and activities</p></div>
-          <div class="about-feat"><div class="about-feat-icon">&#129309;</div><h4>Caring Environment</h4><p>Safe, inclusive and nurturing campus</p></div>
+        <div class="about-features" id="features-grid">
+          <div class="about-feat reveal"><div class="about-feat-icon">&#127891;</div><h4>Quality Education</h4><p>CBSE-aligned curriculum with conceptual, exam-focused learning</p></div>
+          <div class="about-feat reveal"><div class="about-feat-icon">&#127793;</div><h4>Holistic Development</h4><p>Balanced growth across academics, sports, arts and values</p></div>
+          <div class="about-feat reveal"><div class="about-feat-icon">&#127968;</div><h4>Modern Facilities</h4><p>Smart classrooms, science labs, library and computer lab</p></div>
+          <div class="about-feat reveal"><div class="about-feat-icon">&#128737;&#65039;</div><h4>Safe &amp; Secure</h4><p>Safe, inclusive and closely supervised campus environment</p></div>
+          <div class="about-feat reveal"><div class="about-feat-icon">&#128100;</div><h4>Experienced Faculty</h4><p>Caring, qualified teachers dedicated to every child's success</p></div>
         </div>
       </div>
       <div class="about-visual"><div class="about-visual-icon" id="pub-school-image">&#127979;</div><div class="about-visual-name">Ideal Children Academy</div><div class="about-visual-sub">Batrauliya, Paharpur - 845458</div></div>
@@ -737,6 +788,16 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
         <div class="form-err" id="formError"></div>
       </div>
     </div>
+  </div>
+</section>
+<section class="cta-banner">
+  <div class="container cta-banner-inner">
+    <div>
+      <div class="sec-eyebrow" style="color:var(--pub-accent);">Get In Touch</div>
+      <h2 class="cta-title">We're Here to Help</h2>
+      <p class="cta-sub">Questions about admissions, fees, or facilities? Our team is just a message away.</p>
+    </div>
+    <a href="#contact" class="btn-primary cta-enquire-btn">Send an Enquiry</a>
   </div>
 </section>
 <footer>
@@ -1175,7 +1236,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
               <input type="text" id="rf-search" placeholder="Search App No. / Roll No. / Name" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;min-width:220px;" oninput="renderResultsFiltered()"/>
               <input type="text" id="rf-class" placeholder="Class filter" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;width:130px;" oninput="renderResultsFiltered()"/>
             </div>
-            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>App. No.</th><th>Roll No.</th><th>Name</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody id="results-body"><tr><td colspan="7" class="no-data">Loading...</td></tr></tbody></table></div>
+            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>App. No.</th><th>Roll No.</th><th>Name</th><th>Exam</th><th>Marksheet No.</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody id="results-body"><tr><td colspan="9" class="no-data">Loading...</td></tr></tbody></table></div>
           </div>
 
           <div class="exam-tab-panel" id="examtabpanel-roster" style="display:none;">
@@ -1342,6 +1403,24 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
                 <input type="file" id="file-school-image" accept="image/*" onchange="uploadSettingAsset(this,'school_image_url','prev-school-image')"/>
               </div>
               <div class="fg" style="max-width:200px;">
+                <label>Site Logo <span style="color:var(--muted);font-weight:400;">(Navbar)</span></label>
+                <img id="prev-site-logo" src="" style="display:none;max-width:110px;max-height:110px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;object-fit:cover;"/>
+                <input type="file" id="file-site-logo" accept="image/*" onchange="uploadSettingAsset(this,'site_logo_url','prev-site-logo')"/>
+                <p style="font-size:10.5px;color:var(--muted);margin-top:4px;">If you don't select a new file and just leave this as-is, the current logo stays exactly as it is — nothing gets removed.</p>
+              </div>
+              <div class="fg" style="max-width:200px;">
+                <label>Hero Building Photo <span style="color:var(--muted);font-weight:400;">(Homepage banner)</span></label>
+                <img id="prev-hero-building" src="" style="display:none;max-width:110px;max-height:110px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;object-fit:cover;"/>
+                <input type="file" id="file-hero-building" accept="image/*" onchange="uploadSettingAsset(this,'hero_building_url','prev-hero-building')"/>
+                <p style="font-size:10.5px;color:var(--muted);margin-top:4px;">Not selecting a file keeps the existing photo unchanged.</p>
+              </div>
+              <div class="fg" style="max-width:200px;">
+                <label>Hero Students Photo <span style="color:var(--muted);font-weight:400;">(Homepage banner)</span></label>
+                <img id="prev-hero-students" src="" style="display:none;max-width:110px;max-height:110px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;object-fit:cover;"/>
+                <input type="file" id="file-hero-students" accept="image/*" onchange="uploadSettingAsset(this,'hero_students_url','prev-hero-students')"/>
+                <p style="font-size:10.5px;color:var(--muted);margin-top:4px;">Not selecting a file keeps the existing photo unchanged.</p>
+              </div>
+              <div class="fg" style="max-width:200px;">
                 <label>Office / HR Signature</label>
                 <img id="prev-sig-office" src="" style="display:none;max-width:150px;max-height:80px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;"/>
                 <input type="file" id="file-sig-office" accept="image/*" onchange="uploadSettingAsset(this,'sig_office_url','prev-sig-office')"/>
@@ -1353,6 +1432,17 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Social Media Links (Top Bar)</div></div>
+          <div class="fg-row" style="max-width:700px;">
+            <div class="fg"><label>Facebook URL</label><input type="text" id="set-social-fb" placeholder="https://facebook.com/..."/></div>
+            <div class="fg"><label>Instagram URL</label><input type="text" id="set-social-ig" placeholder="https://instagram.com/..."/></div>
+            <div class="fg"><label>YouTube URL</label><input type="text" id="set-social-yt" placeholder="https://youtube.com/..."/></div>
+          </div>
+          <p style="font-size:11px;color:var(--muted);margin:-6px 0 10px;">Leave any field blank to hide that icon from the website's top bar.</p>
+          <button class="btn-add" onclick="saveSocialLinks()">Save Social Links</button>
         </div>
 
         <div class="acard">
@@ -3257,7 +3347,13 @@ async function loadSiteSettings(){
     setAssetPreview('prev-stamp', d.school_stamp_url);
     setAssetPreview('prev-principal-photo', d.principal_photo_url);
     setAssetPreview('prev-school-image', d.school_image_url);
+    setAssetPreview('prev-site-logo', d.site_logo_url);
+    setAssetPreview('prev-hero-building', d.hero_building_url);
+    setAssetPreview('prev-hero-students', d.hero_students_url);
     setAssetPreview('prev-sig-office', d.sig_office_url);
+    document.getElementById('set-social-fb').value = d.social_facebook || '';
+    document.getElementById('set-social-ig').value = d.social_instagram || '';
+    document.getElementById('set-social-yt').value = d.social_youtube || '';
     loadAccountsStatus();
     setAssetPreview('prev-sig-principal', d.sig_principal_url);
     _leavePolicy = [];
@@ -3287,6 +3383,22 @@ async function saveContactSettings(){
       _siteSettingsCache[key]=vals[key];
     }
     toast('Contact details saved!');
+  }catch(e){toast('Error: '+e.message);}
+  hideLoading();
+}
+async function saveSocialLinks(){
+  const vals = {
+    social_facebook: document.getElementById('set-social-fb').value.trim(),
+    social_instagram: document.getElementById('set-social-ig').value.trim(),
+    social_youtube: document.getElementById('set-social-yt').value.trim()
+  };
+  showLoading('Saving...');
+  try{
+    for(const key of Object.keys(vals)){
+      await api('update_setting','POST',{key,value:vals[key]});
+      _siteSettingsCache[key]=vals[key];
+    }
+    toast('Social links saved!');
   }catch(e){toast('Error: '+e.message);}
   hideLoading();
 }
@@ -3372,6 +3484,33 @@ async function loadThemeOnInit(){
     if(d.school_image_url){
       const el=document.getElementById('pub-school-image');
       if(el) el.innerHTML=`<img src="${esc(d.school_image_url)}" style="width:150px;height:150px;object-fit:cover;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.3);"/>`;
+    }
+    // Top bar — phone / email (falls back to sensible defaults if not set)
+    const phone = d.office_phone || '+91 12345 67890';
+    const email = d.office_email || 'info@icabatrauliya.com';
+    const phoneTextEl=document.getElementById('topbar-phone-text'); if(phoneTextEl) phoneTextEl.textContent = phone;
+    const phoneLinkEl=document.getElementById('topbar-phone-link'); if(phoneLinkEl) phoneLinkEl.href = 'tel:'+phone.replace(/[^0-9+]/g,'');
+    const emailTextEl=document.getElementById('topbar-email-text'); if(emailTextEl) emailTextEl.textContent = email;
+    const emailLinkEl=document.getElementById('topbar-email-link'); if(emailLinkEl) emailLinkEl.href = 'mailto:'+email;
+    // Top bar — social icons (only shown once a URL is set in Site Settings)
+    [['social_facebook','topbar-fb'],['social_instagram','topbar-ig'],['social_youtube','topbar-yt']].forEach(([key,id])=>{
+      const a=document.getElementById(id);
+      if(a && d[key]){ a.href = d[key]; a.style.display='flex'; }
+    });
+    // Navbar logo (falls back to the "ICA" text badge if none uploaded)
+    if(d.site_logo_url){
+      const li=document.getElementById('nav-logo-icon');
+      if(li) li.innerHTML = `<img src="${esc(d.site_logo_url)}" alt="Logo"/>`;
+    }
+    // Hero visual — Building photo (main) + Students photo (floating accent), both admin-uploadable.
+    if(d.hero_building_url){
+      const bi=document.getElementById('pub-hero-building'); const ph=document.getElementById('hero-building-placeholder');
+      if(bi){ bi.src=d.hero_building_url; bi.style.display='block'; }
+      if(ph) ph.style.display='none';
+    }
+    if(d.hero_students_url){
+      const si=document.getElementById('pub-hero-students');
+      if(si){ si.src=d.hero_students_url; si.style.display='block'; }
     }
   }catch(e){}
 }
@@ -4199,18 +4338,34 @@ async function deleteStaffIdRecord(id){
   try{ await adm('acc_delete_staff','POST',{id}); hideLoading(); toast('Staff deleted.'); loadStaffIdList(); }
   catch(e){ hideLoading(); toast('Error: '+e.message); }
 }
-function generateStaffIdCards(mode){
+async function generateStaffIdCards(mode){
   let list = renderStaffIdListFiltered();
   if(mode==='selected'){ list = list.filter(s=>_staffIdChecked[s.id]); }
   if(!list.length){ toast(mode==='selected' ? 'No staff selected.' : 'No staff to generate.'); return; }
-  printIdCards(list.map(buildStaffCardHtml).join(''), 'Staff ID Cards');
+  const cfg = await getIdCardBrandSettings();
+  printIdCards(list.map(s=>buildStaffCardHtml(s,cfg)).join(''), 'Staff ID Cards');
 }
-function generateOneStaffCard(s){ printIdCards(buildStaffCardHtml(s), 'Staff ID Card — '+s.name); }
-function buildStaffCardHtml(s){
+async function generateOneStaffCard(s){ const cfg = await getIdCardBrandSettings(); printIdCards(buildStaffCardHtml(s,cfg), 'Staff ID Card — '+s.name); }
+async function getIdCardBrandSettings(){
+  if(_siteSettingsCache && Object.keys(_siteSettingsCache).length) return _siteSettingsCache;
+  try{ const r = await adm('get_settings'); _siteSettingsCache = r.data||{}; }catch(e){ _siteSettingsCache = {}; }
+  return _siteSettingsCache;
+}
+function idCardQrUrl(type, id){
+  const verifyUrl = location.origin + '/verify-id?type=' + type + '&id=' + id;
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=6&data=' + encodeURIComponent(verifyUrl);
+}
+function buildStaffCardHtml(s, cfg){
+  cfg = cfg || {};
   const photo = s.photo_url ? `<img src="${esc(s.photo_url)}"/>` : '<div class="idc-noimg">Photo</div>';
+  const seal = cfg.school_stamp_url ? `<img class="idc-seal" src="${esc(cfg.school_stamp_url)}"/>` : '';
+  const qr = s.id ? `<img class="idc-qr" src="${idCardQrUrl('staff', s.id)}"/>` : '';
+  const sigPrincipal = cfg.sig_principal_url ? `<img class="idc-sig-img" src="${esc(cfg.sig_principal_url)}"/>` : '<div class="idc-sig-blank"></div>';
+  const sigHr = cfg.sig_office_url ? `<img class="idc-sig-img" src="${esc(cfg.sig_office_url)}"/>` : '<div class="idc-sig-blank"></div>';
   return `
   <div class="idc-pair">
     <div class="idc-card idc-front">
+      <div class="idc-topband">STAFF IDENTITY CARD</div>
       <div class="idc-head">IDEAL CHILDREN ACADEMY</div>
       <div class="idc-sub">Batrauliya, Paharpur, East Champaran</div>
       <div class="idc-photo">${photo}</div>
@@ -4223,10 +4378,18 @@ function buildStaffCardHtml(s){
         <tr><td>Department</td><td>${esc(s.department||'-')}</td></tr>
         <tr><td>Blood Group</td><td>${esc(s.blood_group||'-')}</td></tr>
       </table>
+      <div class="idc-sig-row">
+        <div class="idc-sig-col">${sigPrincipal}<div class="idc-sig-label">Principal</div></div>
+        <div class="idc-sig-col">${sigHr}<div class="idc-sig-label">HR</div></div>
+      </div>
+      ${seal ? `<div class="idc-seal-wrap">${seal}</div>` : ''}
     </div>
     <div class="idc-card idc-back">
+      <div class="idc-topband">STAFF IDENTITY CARD</div>
       <div class="idc-head">Address</div>
       <div class="idc-address">${esc(s.address||'Not provided')}</div>
+      ${qr ? `<div class="idc-qr-wrap">${qr}<div class="idc-qr-label">Scan to verify</div></div>` : ''}
+      ${seal ? `<div class="idc-seal-wrap">${seal}</div>` : ''}
       <div class="idc-foot">If found, please return to the school office.</div>
     </div>
   </div>`;
@@ -4279,18 +4442,24 @@ function toggleAllStudentChecks(cb){
   renderStudentIdListFiltered().forEach(s=>{ _studentIdChecked[s.id]=cb.checked; });
   renderStudentIdList();
 }
-function generateStudentIdCards(mode){
+async function generateStudentIdCards(mode){
   let list = renderStudentIdListFiltered();
   if(mode==='selected'){ list = list.filter(s=>_studentIdChecked[s.id]); }
   if(!list.length){ toast(mode==='selected' ? 'No students selected.' : 'No students to generate.'); return; }
-  printIdCards(list.map(buildStudentCardHtml).join(''), 'Student ID Cards');
+  const cfg = await getIdCardBrandSettings();
+  printIdCards(list.map(s=>buildStudentCardHtml(s,cfg)).join(''), 'Student ID Cards');
 }
-function generateOneStudentCard(s){ printIdCards(buildStudentCardHtml(s), 'Student ID Card — '+s.student_name); }
-function buildStudentCardHtml(s){
+async function generateOneStudentCard(s){ const cfg = await getIdCardBrandSettings(); printIdCards(buildStudentCardHtml(s,cfg), 'Student ID Card — '+s.student_name); }
+function buildStudentCardHtml(s, cfg){
+  cfg = cfg || {};
   const photo = s.photo_url ? `<img src="${esc(s.photo_url)}"/>` : '<div class="idc-noimg">Photo</div>';
+  const seal = cfg.school_stamp_url ? `<img class="idc-seal" src="${esc(cfg.school_stamp_url)}"/>` : '';
+  const qr = s.id ? `<img class="idc-qr" src="${idCardQrUrl('student', s.id)}"/>` : '';
+  const sigPrincipal = cfg.sig_principal_url ? `<img class="idc-sig-img" src="${esc(cfg.sig_principal_url)}"/>` : '<div class="idc-sig-blank"></div>';
   return `
   <div class="idc-pair">
     <div class="idc-card idc-front">
+      <div class="idc-topband">STUDENT IDENTITY CARD</div>
       <div class="idc-head">IDEAL CHILDREN ACADEMY</div>
       <div class="idc-sub">Batrauliya, Paharpur, East Champaran</div>
       <div class="idc-photo">${photo}</div>
@@ -4302,10 +4471,17 @@ function buildStudentCardHtml(s){
         <tr><td>Father's Name</td><td>${esc(s.father_name||'-')}</td></tr>
         <tr><td>Blood Group</td><td>${esc(s.blood_group||'-')}</td></tr>
       </table>
+      <div class="idc-sig-row" style="justify-content:center;">
+        <div class="idc-sig-col">${sigPrincipal}<div class="idc-sig-label">Principal</div></div>
+      </div>
+      ${seal ? `<div class="idc-seal-wrap">${seal}</div>` : ''}
     </div>
     <div class="idc-card idc-back">
+      <div class="idc-topband">STUDENT IDENTITY CARD</div>
       <div class="idc-head">Address</div>
       <div class="idc-address">${esc(s.address||'Not provided')}</div>
+      ${qr ? `<div class="idc-qr-wrap">${qr}<div class="idc-qr-label">Scan to verify</div></div>` : ''}
+      ${seal ? `<div class="idc-seal-wrap">${seal}</div>` : ''}
       <div class="idc-foot">If found, please return to the school office.</div>
     </div>
   </div>`;
@@ -4346,12 +4522,13 @@ function printIdCards(cardsHtml, title){
   const w=window.open('','_blank');
   w.document.write(`<html><head><title>${esc(title)}</title><style>
     *{box-sizing:border-box;}
-    body{font-family:Arial,sans-serif;margin:0;padding:16px;background:#eee;}
+    body{font-family:'Poppins',Arial,sans-serif;margin:0;padding:16px;background:#e9edf5;}
     .idc-pair{display:inline-flex;gap:10px;margin:0 10px 14px 0;vertical-align:top;page-break-inside:avoid;}
-    .idc-card{width:260px;min-height:400px;background:#fff;border:1px solid #ccc;border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.12);}
+    .idc-card{width:262px;min-height:420px;background:#fff;border:1px solid #d8deea;border-radius:14px;padding:0 16px 14px;text-align:center;box-shadow:0 4px 14px rgba(10,22,40,.16);position:relative;overflow:hidden;}
+    .idc-topband{background:linear-gradient(120deg,#0a1628,#173a6b);color:#f4c95d;font-size:10px;font-weight:700;letter-spacing:1px;padding:6px 0;margin:0 -16px 10px;}
     .idc-head{font-weight:800;color:#0a1628;font-size:13px;letter-spacing:.4px;}
     .idc-sub{font-size:9.5px;color:#666;margin-bottom:8px;}
-    .idc-photo{width:90px;height:90px;margin:6px auto 10px;border-radius:8px;overflow:hidden;background:#f1f3f7;display:flex;align-items:center;justify-content:center;}
+    .idc-photo{width:88px;height:88px;margin:6px auto 10px;border-radius:10px;overflow:hidden;background:#f1f3f7;display:flex;align-items:center;justify-content:center;border:3px solid #f4c95d;}
     .idc-photo img{width:100%;height:100%;object-fit:cover;}
     .idc-noimg{font-size:10px;color:#999;}
     .idc-name{font-weight:700;font-size:14px;color:#0a1628;margin-bottom:2px;}
@@ -4359,9 +4536,19 @@ function printIdCards(cardsHtml, title){
     .idc-tbl{width:100%;border-collapse:collapse;font-size:10.5px;text-align:left;}
     .idc-tbl td{padding:4px 2px;border-bottom:1px dashed #ddd;color:#333;}
     .idc-tbl td:first-child{color:#777;width:44%;}
-    .idc-back{display:flex;flex-direction:column;justify-content:center;}
-    .idc-address{font-size:12px;color:#222;margin:14px 0;line-height:1.6;}
-    .idc-foot{font-size:9.5px;color:#888;margin-top:auto;}
+    .idc-back{display:flex;flex-direction:column;align-items:center;}
+    .idc-address{font-size:12px;color:#222;margin:10px 0;line-height:1.6;min-height:50px;}
+    .idc-foot{font-size:9px;color:#999;margin-top:auto;padding-top:8px;}
+    .idc-sig-row{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding-top:8px;border-top:1px dashed #ddd;}
+    .idc-sig-col{flex:1;text-align:center;}
+    .idc-sig-img{max-width:70px;max-height:26px;object-fit:contain;}
+    .idc-sig-blank{height:26px;}
+    .idc-sig-label{font-size:8.5px;color:#888;border-top:1px solid #999;margin-top:2px;padding-top:2px;}
+    .idc-seal-wrap{margin-top:8px;}
+    .idc-seal{width:52px;height:52px;object-fit:contain;opacity:.92;}
+    .idc-qr-wrap{margin-top:6px;}
+    .idc-qr{width:88px;height:88px;}
+    .idc-qr-label{font-size:8.5px;color:#888;margin-top:2px;}
     @media print{ body{background:#fff;} }
   </style></head><body>${cardsHtml}
   <div style="text-align:center;margin-top:10px;"><button onclick="window.print()" style="padding:10px 24px;background:#0a1628;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print</button></div>
@@ -4439,12 +4626,14 @@ function renderResultsFiltered(){ renderResults(getResultsFiltered()); }
 function renderResults(list){
   const tbody=document.getElementById('results-body');
   const rows = list || _results;
-  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" class="no-data">No results published yet.</td></tr>';return;}
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="9" class="no-data">No results published yet.</td></tr>';return;}
   tbody.innerHTML=rows.map((r,i)=>`<tr>
     <td>${i+1}</td>
     <td style="font-weight:700;color:var(--navy);font-size:11.5px;">${esc(r.application_number)}</td>
     <td>${esc(r.roll_no||'-')}</td>
     <td>${esc(r.student_name)}</td>
+    <td>${esc(r.exam_name||'-')}</td>
+    <td><b>${esc(r.marksheet_no||'-')}</b></td>
     <td><span class="pill ${(r.result_status==='Pass'||r.result_status==='Selected')?'pill-contacted':'pill-new'}">${esc(r.result_status)}</span></td>
     <td>${new Date(r.updated_at||r.created_at).toLocaleDateString('en-IN')}</td>
     <td class="tbl-actions">
@@ -4514,8 +4703,22 @@ function openResultEditor(id, forcedCategory){
     </div>
 
     <div id="re-academic-fields" style="display:${d.category!=='hiring'?'contents':'none'}">
+      <div class="mdi"><label>Exam Name <span class="req">*</span></label>
+        <select id="re-examname-select" onchange="reToggleExamCustom()">
+          <option value="Unit Test 1" ${d.exam_name==='Unit Test 1'?'selected':''}>Unit Test 1</option>
+          <option value="Half-Yearly Examination" ${d.exam_name==='Half-Yearly Examination'?'selected':''}>Half-Yearly Examination</option>
+          <option value="Unit Test 2" ${d.exam_name==='Unit Test 2'?'selected':''}>Unit Test 2</option>
+          <option value="Annual Examination" ${(!d.exam_name||d.exam_name==='Annual Examination')?'selected':''}>Annual Examination</option>
+          <option value="__custom__" ${d.exam_name && !['Unit Test 1','Half-Yearly Examination','Unit Test 2','Annual Examination'].includes(d.exam_name)?'selected':''}>Custom / Other...</option>
+        </select>
+        <input type="text" id="re-examname-custom" placeholder="Type exam name" value="${esc(d.exam_name && !['Unit Test 1','Half-Yearly Examination','Unit Test 2','Annual Examination'].includes(d.exam_name)?d.exam_name:'')}" style="margin-top:6px;display:${d.exam_name && !['Unit Test 1','Half-Yearly Examination','Unit Test 2','Annual Examination'].includes(d.exam_name)?'block':'none'};"/>
+        <p style="font-size:10.5px;color:var(--muted);margin-top:4px;">Marksheet No stays the SAME for this student throughout this Class (across FA1/FA2/FA3/End Term/any exam edits). Only when the student moves to a <b>different Class</b> does a new Marksheet No get generated.</p>
+      </div>
+      <div class="mdi"><label>Marksheet No ${d.marksheet_no?'':'(auto-generated on save)'}</label><input type="text" value="${esc(d.marksheet_no||'Will be generated automatically')}" disabled style="background:#f1f3f7;font-weight:700;"/></div>
       <div class="mdi"><label>Class</label><input type="text" id="re-class" value="${esc(d.class_name||'')}"/></div>
+      <div class="mdi"><label>Section</label><input type="text" id="re-section" value="${esc(d.section||'')}"/></div>
       <div class="mdi"><label>Roll No</label><input type="text" id="re-roll" value="${esc(d.roll_no||'')}"/></div>
+      <div class="mdi"><label>Father's Name</label><input type="text" id="re-father" value="${esc(d.father_name||'')}"/></div>
       <div class="mdi full">
         <label>Subjects &amp; Marks — FA1 / FA2 / FA3 (Formative Assessment) + End Term</label>
         <p style="font-size:10.5px;color:var(--muted);margin:2px 0 6px;">FA = Formative Assessment (class tests during the term). Obtained, Total, % and Grade are calculated automatically the moment you type marks — nothing to add by hand. &lt;33% = Fail, 33–59% = Grade C, 60–74% = Grade B, 75–89% = Grade A, 90%+ = Grade A+.</p>
@@ -4546,7 +4749,20 @@ function openResultEditor(id, forcedCategory){
   document.getElementById('modal-btns').innerHTML='<button class="btn-excel" onclick="saveResult()">Save</button>';
   reRenderSubjects();
   reToggleCategory();
+  reToggleExamCustom();
   document.getElementById('modalBg').classList.add('show');
+}
+function reToggleExamCustom(){
+  const sel = document.getElementById('re-examname-select');
+  const custom = document.getElementById('re-examname-custom');
+  if(!sel || !custom) return;
+  custom.style.display = sel.value === '__custom__' ? 'block' : 'none';
+}
+function reGetExamName(){
+  const sel = document.getElementById('re-examname-select');
+  if(!sel) return '';
+  if(sel.value === '__custom__') return document.getElementById('re-examname-custom').value.trim();
+  return sel.value;
 }
 function reToggleCategory(){
   const cat=document.getElementById('re-category').value;
@@ -4624,8 +4840,10 @@ async function reAutoFillByRoll(){
     document.getElementById('re-dob').value = info.dob||dob;
     document.getElementById('re-category').value='academic'; reToggleCategory();
     const c=document.getElementById('re-class'); if(c) c.value = info.class_name||'';
+    const sec=document.getElementById('re-section'); if(sec) sec.value = info.section||'';
+    const fn=document.getElementById('re-father'); if(fn) fn.value = info.father_name||'';
     const rn=document.getElementById('re-roll'); if(rn) rn.value = info.roll_no||rollNo;
-    toast("Student found — details filled in. Now enter this term's marks below.");
+    toast("Student found — details filled in. Now pick the Exam Name and enter marks below.");
   }catch(e){ hideLoading(); toast('Lookup failed: '+e.message); }
 }
 async function reAutoFill(){
@@ -4642,6 +4860,9 @@ async function reAutoFill(){
     if(info.dob) document.getElementById('re-dob').value = info.dob;
     if(info.category){ document.getElementById('re-category').value = info.category; reToggleCategory(); }
     if(info.class_name) { const c=document.getElementById('re-class'); if(c) c.value = info.class_name; }
+    if(info.section) { const sec=document.getElementById('re-section'); if(sec) sec.value = info.section; }
+    if(info.father_name) { const fn=document.getElementById('re-father'); if(fn) fn.value = info.father_name; }
+    if(info.roll_no) { const rn=document.getElementById('re-roll'); if(rn) rn.value = info.roll_no; }
     if(info.photo_url){
       document.getElementById('re-photo-url').value = info.photo_url;
       document.getElementById('re-photo-preview').src = info.photo_url;
@@ -4676,7 +4897,10 @@ async function saveResult(){
     Object.assign(payload,{
       result_status: document.getElementById('re-status-academic').value,
       class_name: document.getElementById('re-class').value,
+      section: document.getElementById('re-section').value,
       roll_no: document.getElementById('re-roll').value,
+      father_name: document.getElementById('re-father').value,
+      exam_name: reGetExamName(),
       subjects: _reSubjects.filter(s=>s.name),
       total_marks: document.getElementById('re-total').value,
       max_marks: document.getElementById('re-max').value,
@@ -4684,6 +4908,7 @@ async function saveResult(){
       grade: document.getElementById('re-grade').value,
       remarks: document.getElementById('re-remarks').value
     });
+    if(!payload.exam_name){ toast('Please select or type an Exam Name.'); return; }
   }
   showLoading('Saving result...');
   try{
@@ -5072,6 +5297,26 @@ function renderTrackResult(type, d, letters, formData){
         </div>
         <div class="doc-card-grid">${cardsHtml || '<p style="text-align:center;color:var(--muted);grid-column:1/-1;">No documents published yet.</p>'}</div>
       </div>`;
+    } else if(Array.isArray(letters) && letters.length > 1){
+      // Student has multiple exam marksheets (e.g. Half-Yearly + Annual) — let them choose.
+      let cardsHtml = '';
+      letters.forEach((l)=>{
+        cardsHtml += `
+          <div class="doc-card" onclick='openLetterCard(${JSON.stringify(l).replace(/'/g,"&apos;")})'>
+            <div class="doc-card-icon">&#128203;</div>
+            <div class="doc-card-title">Class ${esc(l.class_name||'-')}${l.section?(' - '+esc(l.section)):''}</div>
+            <div class="doc-card-sub">${esc(l.exam_name||'Result')} &middot; Marksheet No: ${esc(l.marksheet_no||'-')}</div>
+            <div class="doc-card-action">View / Download / Print &rarr;</div>
+          </div>`;
+      });
+      wrap.innerHTML = `<div style="background:#fff;padding:26px;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.06);">
+        <div style="text-align:center;">
+          <div style="font-size:13px;color:var(--muted);">Roll No: <b>${esc(d.roll_no||'-')}</b></div>
+          <h3 style="margin:8px 0;color:var(--navy);">${esc(d.student_name)}</h3>
+          <p style="font-size:12.5px;color:var(--muted);">Select an exam below to view its marksheet.</p>
+        </div>
+        <div class="doc-card-grid">${cardsHtml}</div>
+      </div>`;
     } else {
       // Academic result — unchanged single-letter behaviour
       const letterWin = openLetterPage(d, _pubSettings);
@@ -5285,11 +5530,16 @@ function buildLetterPageHTML(d, s){
         ${photo}
       </div>
       <div class="meta">
-        ${d.category==='hiring' ? `<div>Ref. No.: <b>${esc(d.ref_no||'-')}</b></div>` : '<div></div>'}
+        ${d.category==='hiring' ? `<div>Ref. No.: <b>${esc(d.ref_no||'-')}</b></div>` : `<div>Marksheet No.: <b>${esc(d.marksheet_no||'-')}</b></div>`}
         <div>Date: <b>${today}</b></div>
       </div>
       <h3 style="text-align:center;color:#0a1628;text-decoration:underline;margin:18px 0;">${esc(subjectTitle)}</h3>
-      <div style="font-size:13px;color:#444;">Application No: <b>${esc(d.application_number)}</b>${d.class_name?(' &nbsp;|&nbsp; Class: <b>'+esc(d.class_name)+'</b>'):''}${d.roll_no?(' &nbsp;|&nbsp; Roll No: <b>'+esc(d.roll_no)+'</b>'):''}</div>
+      ${d.category!=='hiring' ? `
+      <div style="text-align:center;font-size:12px;color:#a67c1e;font-weight:700;margin-top:-10px;margin-bottom:14px;text-transform:uppercase;letter-spacing:.4px;">${esc(d.exam_name||'Annual Examination')}</div>
+      <div style="font-size:13px;color:#444;line-height:1.9;">
+        Student Name: <b>${esc(d.student_name)}</b>${d.father_name?(' &nbsp;|&nbsp; Father\'s Name: <b>'+esc(d.father_name)+'</b>'):''}<br/>
+        Application No: <b>${esc(d.application_number)}</b>${d.class_name?(' &nbsp;|&nbsp; Class: <b>'+esc(d.class_name)+(d.section?(' - '+esc(d.section)):'')+'</b>'):''}${d.roll_no?(' &nbsp;|&nbsp; Roll No: <b>'+esc(d.roll_no)+'</b>'):''}
+      </div>` : `<div style="font-size:13px;color:#444;">Application No: <b>${esc(d.application_number)}</b></div>`}
       ${bodyHtml}
       <div class="sig-row">
         <div class="sig-box"><div class="sig-line">${d.category==='hiring'?'Candidate Signature':'Parent / Guardian Signature'}</div></div>
@@ -5341,10 +5591,40 @@ window.addEventListener('scroll',()=>{
   const y=window.scrollY+80;let active='home';
   secs.forEach(s=>{const el=document.getElementById(s);if(el&&el.offsetTop<=y)active=s;});
   document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+active));
+  const navEl=document.getElementById('mainNav'); if(navEl) navEl.classList.toggle('scrolled', window.scrollY>20);
 });
 renderPublicNotices();
 checkAdmissionStatus();
 loadThemeOnInit();
+initLandingAnimations();
+function initLandingAnimations(){
+  // Fade-up / zoom reveal on scroll
+  try{
+    const io=new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in-view'); io.unobserve(e.target); } });
+    },{threshold:0.15});
+    document.querySelectorAll('.reveal,.reveal-zoom').forEach(el=>io.observe(el));
+  }catch(e){ document.querySelectorAll('.reveal,.reveal-zoom').forEach(el=>el.classList.add('in-view')); }
+  // Stat counter animation — counts up once when scrolled into view
+  try{
+    const counters=document.querySelectorAll('.hero-stat-num[data-count]');
+    const cio=new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if(!e.isIntersecting) return;
+        cio.unobserve(e.target);
+        const el=e.target; const target=parseInt(el.getAttribute('data-count'),10)||0;
+        const suffix=el.getAttribute('data-suffix')||''; const dur=1200; const start=performance.now();
+        function step(now){
+          const p=Math.min((now-start)/dur,1); const eased=1-Math.pow(1-p,3);
+          el.textContent=Math.round(eased*target)+suffix;
+          if(p<1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      });
+    },{threshold:0.4});
+    counters.forEach(el=>cio.observe(el));
+  }catch(e){}
+}
 // Load public gallery & testimonials on page init
 (async()=>{
   await loadCareerForms();
@@ -5369,5 +5649,27 @@ setRating(5);
     </div>
   </div>
 </div>
+<script>
+// ── Basic code-protection deterrents ──
+// Note: these are casual deterrents, not real security. Anyone determined can
+// still view a website's front-end code (that's how browsers work) — but this
+// stops most casual right-click "View Source" / "Save As" / accidental DevTools opens.
+(function(){
+  var isAdminArea = false;
+  document.addEventListener('contextmenu', function(e){
+    // Still allow right-click inside the Admin Panel (needed for copy/paste convenience).
+    var adminEl = document.getElementById('adminOverlay');
+    if (adminEl && adminEl.classList.contains('show')) return;
+    e.preventDefault();
+  });
+  document.addEventListener('keydown', function(e){
+    var k = e.key ? e.key.toLowerCase() : '';
+    if (k === 'f12') { e.preventDefault(); return false; }
+    if (e.ctrlKey && k === 'u') { e.preventDefault(); return false; }              // View Source
+    if (e.ctrlKey && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) { e.preventDefault(); return false; } // DevTools
+    if (e.ctrlKey && k === 's') { e.preventDefault(); return false; }              // Save Page
+  });
+})();
+</script>
 </body>
 </html>

@@ -343,12 +343,14 @@ app.all('/api', async (req, res) => {
       const dob = String(body.dob || '').trim();
       if (!dob || (!appNumber && !rollNo)) return err(res, 'Please provide your Roll Number (or Application Number) and Date of Birth.');
 
-      // Student academic result — looked up by Roll No + DOB (not Application Number)
+      // Student academic result — looked up by Roll No + DOB (not Application Number).
+      // A student can now have MULTIPLE marksheets (one per Exam Name, e.g. Half-Yearly,
+      // Annual) — fetch all of them so the student can pick which exam's marksheet to view.
       if (rollNo && !appNumber) {
-        const result = await db.collection('results').findOne({ roll_no: rollNo, dob, category: 'academic' });
-        if (result) {
-          const { dob: _d, ref_no: _r, ...safe } = result;
-          return ok(res, { found: true, type: 'result', data: mapDoc(safe), letters: mapDocs([safe]), form_data: null });
+        const allResults = await db.collection('results').find({ roll_no: rollNo, dob, category: 'academic' }).sort({ class_name: 1 }).toArray();
+        if (allResults.length) {
+          const safeList = allResults.map(r => { const { dob: _d, ref_no: _r, ...safe } = r; return safe; });
+          return ok(res, { found: true, type: 'result', data: mapDoc(safeList[0]), letters: mapDocs(safeList), form_data: null });
         }
         return err(res, 'No result found. Please check your Roll Number and Date of Birth.', 404);
       }
@@ -365,6 +367,10 @@ app.all('/api', async (req, res) => {
           letters = all.map(x => { const { dob: _d2, ...s } = x; return mapDoc(s); });
           const sub = await db.collection('form_submissions').findOne({ application_number: appNumber });
           if (sub) formData = mapDoc(sub);
+        } else {
+          // Academic — same student may have multiple exam marksheets (Half-Yearly, Annual, etc.)
+          const all = await db.collection('results').find({ application_number: appNumber, category: 'academic' }).sort({ class_name: 1 }).toArray();
+          letters = all.map(x => { const { dob: _d2, ref_no: _r2, ...s } = x; return mapDoc(s); });
         }
         return ok(res, { found: true, type: 'result', data: mapDoc(safe), letters: mapDocs(letters), form_data: formData });
       }
@@ -590,9 +596,17 @@ if (
 
       const adm = await db.collection('admissions').findOne({ application_number: appNumber });
       if (adm) {
+        // Prefer the fee_students record for class/section — it reflects the LATEST
+        // class/section (e.g. after a Transfer), while admissions holds the original
+        // applying_class only.
+        const fs = await db.collection('fee_students').findOne({ application_number: appNumber });
         return ok(res, { source: 'admission', data: {
           name: adm.student_name || '', photo_url: adm.photo_file_url || adm.photo_url || '',
-          dob: adm.dob || '', category: 'academic', class_name: adm.applying_class || ''
+          dob: adm.dob || '', category: 'academic',
+          class_name: (fs && fs.applying_class) || adm.applying_class || '',
+          section: (fs && fs.section) || '',
+          father_name: adm.father_name || '',
+          roll_no: (fs && (fs.exam_roll_no || fs.class_roll_no)) || ''
         }});
       }
 
@@ -613,7 +627,9 @@ if (
       if (existing) {
         return ok(res, { source: 'result', data: {
           name: existing.student_name || '', photo_url: existing.photo_url || '',
-          dob: existing.dob || '', category: existing.category || 'academic'
+          dob: existing.dob || '', category: existing.category || 'academic',
+          class_name: existing.class_name || '', section: existing.section || '',
+          father_name: existing.father_name || '', roll_no: existing.roll_no || ''
         }});
       }
 
@@ -876,7 +892,7 @@ if (
     }
     if (action === 'save_result' && req.method === 'POST') {
       const {
-        id, application_number, dob, category, student_name, class_name, roll_no,
+        id, application_number, dob, category, student_name, class_name, section, roll_no, father_name, exam_name,
         photo_url, subjects, total_marks, max_marks, percentage, grade,
         result_status, remarks, position, department, joining_date, salary,
         reporting_time, offer_note, letter_type, letter_body
@@ -888,6 +904,9 @@ if (
         photo = await uploadDoc(photo, 'results/' + application_number.replace(/[^A-Za-z0-9]+/g, '-'), 'photo');
       }
 
+      const isAcademic = (category || 'academic') !== 'hiring';
+      const cleanExamName = String(exam_name || '').trim() || 'Annual Examination';
+
       // Keep the same reference number across edits AND across offer/appointment
       // letters that share the same Application Number (fixes: different ref no
       // being generated for Offer Letter vs Appointment Letter of the same candidate).
@@ -898,16 +917,35 @@ if (
       let existingDoc = null;
       const editOid = id ? toOid(id) : null;
       if (editOid) existingDoc = await db.collection('results').findOne({ _id: editOid });
+      // For academic results (no id passed — e.g. a fresh "Add Result" for a student who
+      // already has a marksheet for this same Class), match on Application No + Class so we
+      // UPDATE that SAME marksheet (keeping the same Marksheet No) as FA1/FA2/FA3/Final marks
+      // come in through the year — instead of creating a duplicate with a new Marksheet No.
+      const cleanClassName = String(class_name || '').trim();
+      if (!existingDoc && isAcademic && application_number && cleanClassName) {
+        existingDoc = await db.collection('results').findOne({
+          application_number: String(application_number).trim(), category: 'academic', class_name: cleanClassName
+        });
+      }
       let refNo = body.ref_no || (existingDoc && existingDoc.ref_no) || '';
-      if (!refNo && (category || 'academic') === 'hiring' && application_number) {
+      if (!refNo && !isAcademic && application_number) {
         refNo = String(application_number).trim();
+      }
+      // Marksheet No — one unique 6-digit number per (student + Class).
+      // It stays IDENTICAL across FA1/FA2/FA3/End Term/any exam-name edits within that
+      // SAME class (because we keep updating the same document above). Once the student
+      // moves to a DIFFERENT class (new academic year), that's a new document and gets
+      // its own fresh Marksheet No.
+      let marksheetNo = (existingDoc && existingDoc.marksheet_no) || '';
+      if (!marksheetNo && isAcademic) {
+        marksheetNo = await generateUniqueNumericId(db, 'results', 'marksheet_no', 6);
       }
 
       // Academic results: always recompute totals/percentage/grade/pass-fail
       // server-side from FA1+FA2+FA3+End Term (or legacy marks/max) so the
       // published marksheet can never be out of sync with entered marks.
       let computedAcademic = null;
-      if ((category || 'academic') !== 'hiring' && Array.isArray(subjects) && subjects.length) {
+      if (isAcademic && Array.isArray(subjects) && subjects.length) {
         computedAcademic = computeAcademicResult(subjects);
       }
 
@@ -915,7 +953,10 @@ if (
         application_number: String(application_number).trim(),
         dob: String(dob).trim(),
         category: category || 'academic', // 'academic' | 'hiring'
-        student_name, class_name: class_name || '', roll_no: roll_no || '',
+        student_name, class_name: class_name || '', section: section || '', roll_no: roll_no || '',
+        father_name: father_name || '',
+        exam_name: isAcademic ? cleanExamName : '',
+        marksheet_no: marksheetNo,
         photo_url: photo,
         subjects: computedAcademic ? computedAcademic.subjects : (Array.isArray(subjects) ? subjects : []),
         total_marks: computedAcademic ? computedAcademic.total_marks : (total_marks || ''),
@@ -930,10 +971,9 @@ if (
         letter_body: letter_body || '', ref_no: refNo,
         updated_at: nowIso()
       };
-      if (id) {
-        const oid = toOid(id); if (!oid) return err(res, 'Bad id');
-        await db.collection('results').updateOne({ _id: oid }, { $set: row });
-        return ok(res, { data: mapDoc(await db.collection('results').findOne({ _id: oid })) });
+      if (existingDoc) {
+        await db.collection('results').updateOne({ _id: existingDoc._id }, { $set: row });
+        return ok(res, { data: mapDoc(await db.collection('results').findOne({ _id: existingDoc._id })) });
       } else {
         row.created_at = nowIso();
         const r = await db.collection('results').insertOne(row);
@@ -946,14 +986,22 @@ if (
     if (action === 'bulk_upload_results' && req.method === 'POST') {
       const rows = Array.isArray(body.rows) ? body.rows : [];
       if (!rows.length) return err(res, 'No rows to upload.');
+      // Exam Name applies to the whole sheet unless a row overrides it (e.g. its own column).
+      const sheetExamName = String(body.exam_name || '').trim() || 'Annual Examination';
       const outcomes = [];
       for (const row of rows) {
         const appNumber = String(row.application_number || '').trim();
         if (!appNumber) { outcomes.push({ application_number: '', ok: false, error: 'Missing application number' }); continue; }
         try {
+          const examName = String(row.exam_name || sheetExamName).trim();
+          const className = String(row.class_name || '').trim();
           let dob = String(row.dob || '').trim();
           let studentName = row.student_name || '';
-          const existing = await db.collection('results').findOne({ application_number: appNumber, category: 'academic' });
+          // Match the SAME student+Class existing marksheet (so re-uploading marks for
+          // the same class updates it in place and keeps its Marksheet No unchanged).
+          const existing = className
+            ? await db.collection('results').findOne({ application_number: appNumber, category: 'academic', class_name: className })
+            : await db.collection('results').findOne({ application_number: appNumber, category: 'academic' });
           if (!dob || !studentName) {
             const adm = await db.collection('admissions').findOne({ application_number: appNumber });
             if (adm) { dob = dob || adm.dob || ''; studentName = studentName || adm.student_name || ''; }
@@ -964,28 +1012,21 @@ if (
           if (!studentName) { outcomes.push({ application_number: appNumber, ok: false, error: 'Student name not found.' }); continue; }
 
           const calc = computeAcademicResult(row.subjects);
-          let refNo = (existing && existing.ref_no) || '';
-          if (!refNo) {
-            const year = String(new Date().getFullYear());
-            try {
-              const counter = await db.collection('app_counters').findOneAndUpdate(
-                { academic_year: year, form_key: 'letter_ref' }, { $inc: { last_number: 1 } }, { upsert: true, returnDocument: 'after' }
-              );
-              const nextNum = counter && counter.last_number ? counter.last_number : 1;
-              refNo = 'ICA/' + year + '/' + String(nextNum).padStart(3, '0');
-            } catch { refNo = 'ICA/' + year + '/' + Date.now().toString().slice(-3); }
-          }
+          const marksheetNo = (existing && existing.marksheet_no) || await generateUniqueNumericId(db, 'results', 'marksheet_no', 6);
 
           const docRow = {
             application_number: appNumber, dob, category: 'academic',
             student_name: studentName,
             class_name: row.class_name || (existing && existing.class_name) || '',
+            section: row.section || (existing && existing.section) || '',
             roll_no: row.roll_no || (existing && existing.roll_no) || '',
+            father_name: row.father_name || (existing && existing.father_name) || '',
+            exam_name: examName, marksheet_no: marksheetNo,
             photo_url: (existing && existing.photo_url) || '',
             subjects: calc.subjects, total_marks: calc.total_marks, max_marks: calc.max_marks,
             percentage: calc.percentage, grade: calc.grade, result_status: calc.result_status,
             remarks: row.remarks || (existing && existing.remarks) || '',
-            letter_type: 'result', ref_no: refNo, updated_at: nowIso()
+            letter_type: 'result', ref_no: '', updated_at: nowIso()
           };
           if (existing) {
             await db.collection('results').updateOne({ _id: existing._id }, { $set: docRow });
@@ -1010,13 +1051,24 @@ if (
       if (!dob || (!rollNo && !appNumber)) return err(res, 'Provide Roll No or Application Number, plus Date of Birth.');
       if (appNumber) {
         const adm = await db.collection('admissions').findOne({ application_number: appNumber, dob });
-        if (adm) return ok(res, { data: { application_number: adm.application_number, student_name: adm.student_name, class_name: adm.applying_class, roll_no: '', dob } });
+        if (adm) {
+          const fs = await db.collection('fee_students').findOne({ application_number: appNumber });
+          return ok(res, { data: {
+            application_number: adm.application_number, student_name: adm.student_name,
+            class_name: (fs && fs.applying_class) || adm.applying_class, section: (fs && fs.section) || '',
+            father_name: adm.father_name || '', roll_no: (fs && (fs.exam_roll_no || fs.class_roll_no)) || '', dob
+          }});
+        }
         return err(res, 'No admission record found for that Application Number & DOB.', 404);
       }
       // Roll No is only assigned once a result has been published at least once — search existing results first.
       const existingResult = await db.collection('results').findOne({ roll_no: rollNo, dob, category: 'academic' });
       if (existingResult) {
-        return ok(res, { data: { application_number: existingResult.application_number, student_name: existingResult.student_name, class_name: existingResult.class_name, roll_no: existingResult.roll_no, dob } });
+        return ok(res, { data: {
+          application_number: existingResult.application_number, student_name: existingResult.student_name,
+          class_name: existingResult.class_name, section: existingResult.section || '',
+          father_name: existingResult.father_name || '', roll_no: existingResult.roll_no, dob
+        }});
       }
       return err(res, 'No student found with that Roll No & DOB yet. Use Application Number for a first-time entry.', 404);
     }
@@ -1389,6 +1441,90 @@ if (
     console.error('API error:', e);
     return err(res, 'Server error: ' + e.message, 500);
   }
+});
+
+// ── Public ID Card verification page (linked from the QR code on staff/student ID cards) ──
+// SECURITY NOTE: this is a public, unauthenticated page (a security guard or anyone
+// scanning the card needs to see it without logging in) — so it intentionally shows
+// ONLY non-sensitive, verification-relevant fields (name, photo, class/designation,
+// card number, active status). It NEVER exposes address, phone number, father's/
+// guardian's name, blood group or date of birth, to protect student & staff privacy.
+// It is looked up by the record's internal database ID (a long random ObjectId), not
+// by the short 3-digit Student ID / 6-digit Staff ID printed on the card — this makes
+// the link practically impossible to guess or enumerate, unlike a small numeric ID.
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+app.get('/verify-id', async (req, res) => {
+  res.set('X-Robots-Tag', 'noindex, nofollow'); // never let this page get indexed by search engines
+  const type = String(req.query.type || '').trim();
+  const idParam = String(req.query.id || '').trim();
+  const oid = toOid(idParam);
+  let html;
+  try {
+    const db = await getDb();
+    let record = null;
+    if (oid && type === 'staff') record = await db.collection('staff').findOne({ _id: oid });
+    else if (oid && type === 'student') record = await db.collection('fee_students').findOne({ _id: oid });
+
+    if (!record) {
+      html = `<div class="vcard bad"><div class="vicon">&#10060;</div><h2>Invalid ID Card</h2><p>This QR code does not match any active record. If you believe this is an error, please contact the school office.</p></div>`;
+    } else if (type === 'staff') {
+      const status = record.status || 'active';
+      const statusOk = status === 'active';
+      html = `<div class="vcard ${statusOk ? 'good' : 'bad'}">
+        ${record.photo_url ? `<img class="vphoto" src="${escHtml(record.photo_url)}"/>` : '<div class="vphoto vnoimg">No Photo</div>'}
+        <h2>${escHtml(record.name)}</h2>
+        <div class="vbadge ${statusOk ? 'ok' : 'no'}">${statusOk ? '&#9989; Active Staff ID' : '&#9888; ' + escHtml(status.toUpperCase())}</div>
+        <table class="vtbl">
+          <tr><td>Staff ID</td><td><b>${escHtml(record.staff_id || '-')}</b></td></tr>
+          <tr><td>Type</td><td>${record.staff_type === 'non_teaching' ? 'Non-Teaching' : 'Teaching'}</td></tr>
+          <tr><td>Designation</td><td>${escHtml(record.position || '-')}</td></tr>
+          <tr><td>Department</td><td>${escHtml(record.department || '-')}</td></tr>
+        </table>
+      </div>`;
+    } else {
+      html = `<div class="vcard good">
+        ${record.photo_url ? `<img class="vphoto" src="${escHtml(record.photo_url)}"/>` : '<div class="vphoto vnoimg">No Photo</div>'}
+        <h2>${escHtml(record.student_name)}</h2>
+        <div class="vbadge ok">&#9989; Enrolled Student</div>
+        <table class="vtbl">
+          <tr><td>Student ID</td><td><b>${escHtml(record.student_id || '-')}</b></td></tr>
+          <tr><td>Class</td><td>${escHtml(record.applying_class || '-')}${record.section ? (' - ' + escHtml(record.section)) : ''}</td></tr>
+          <tr><td>Roll No.</td><td>${escHtml(record.exam_roll_no || record.class_roll_no || '-')}</td></tr>
+        </table>
+      </div>`;
+    }
+  } catch (e) {
+    html = `<div class="vcard bad"><div class="vicon">&#9888;</div><h2>Verification Unavailable</h2><p>Please try again in a moment.</p></div>`;
+  }
+
+  res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>ID Card Verification — Ideal Children Academy</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:#0a1628;margin:0;padding:24px 16px;display:flex;min-height:100vh;align-items:center;justify-content:center;}
+    .vwrap{max-width:360px;width:100%;text-align:center;}
+    .vschool{color:#d4a62a;font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px;}
+    .vcard{background:#fff;border-radius:16px;padding:28px 22px;box-shadow:0 10px 30px rgba(0,0,0,.3);}
+    .vphoto{width:96px;height:96px;border-radius:50%;object-fit:cover;margin:0 auto 14px;display:block;border:3px solid #f1f3f7;}
+    .vnoimg{display:flex;align-items:center;justify-content:center;background:#f1f3f7;color:#999;font-size:11px;}
+    .vicon{font-size:40px;margin-bottom:10px;}
+    h2{margin:6px 0 10px;color:#0a1628;font-size:19px;}
+    .vbadge{display:inline-block;padding:6px 16px;border-radius:100px;font-weight:700;font-size:12.5px;margin-bottom:16px;}
+    .vbadge.ok{background:#dcfce7;color:#166534;}
+    .vbadge.no{background:#fee2e2;color:#991b1b;}
+    .vtbl{width:100%;border-collapse:collapse;font-size:13px;text-align:left;}
+    .vtbl td{padding:8px 4px;border-bottom:1px solid #eee;color:#333;}
+    .vtbl td:first-child{color:#888;width:42%;}
+    .vcard.bad h2{color:#991b1b;}
+    .vcard p{color:#666;font-size:13px;line-height:1.6;}
+    .vfoot{color:rgba(255,255,255,.5);font-size:11px;margin-top:16px;}
+  </style></head><body>
+    <div class="vwrap">
+      <div class="vschool">Ideal Children Academy</div>
+      ${html}
+      <div class="vfoot">Scanned via school ID card QR verification</div>
+    </div>
+  </body></html>`);
 });
 
 // Fallback — serve index.html for any non-API route (SPA support)
