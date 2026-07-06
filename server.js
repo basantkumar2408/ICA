@@ -257,6 +257,57 @@ app.all('/api', async (req, res) => {
       return ok(res, { data: mapDocs(data) });
     }
 
+    /* ═══════════ AI CHATBOT (keyword-matching FAQ assistant) ═══════════
+       This is a lightweight, zero-cost "smart FAQ" bot — it matches the visitor's
+       question against admin-managed Q&A pairs by keyword overlap. It is NOT a
+       full conversational LLM (that would need a paid AI API key); it's a
+       maintainable first step that Admin can fully manage without any code changes. */
+    if (action === 'list_chatbot_faqs' && req.method === 'GET') {
+      const data = await db.collection('chatbot_faqs').find({}).sort({ created_at: 1 }).toArray();
+      return ok(res, { data: mapDocs(data) });
+    }
+    if (action === 'chatbot_query' && req.method === 'POST') {
+      const msg = String(body.message || '').toLowerCase().trim();
+      if (!msg) return ok(res, { answer: "Please type a question — I can help with admissions, fees, results, and more!", matched: false });
+      const faqs = await db.collection('chatbot_faqs').find({}).toArray();
+      const words = msg.split(/\W+/).filter(w => w.length > 2);
+      let best = null, bestScore = 0;
+      faqs.forEach(f => {
+        const kws = (f.keywords || []).map(k => k.toLowerCase());
+        let score = 0;
+        words.forEach(w => { if (kws.some(k => k.includes(w) || w.includes(k))) score++; });
+        if (msg.includes((f.question || '').toLowerCase().slice(0, 12))) score += 2;
+        if (score > bestScore) { bestScore = score; best = f; }
+      });
+      if (best && bestScore > 0) return ok(res, { answer: best.answer, matched: true, question: best.question });
+      return ok(res, {
+        answer: "I'm not sure about that one yet. For anything specific, please call the school office or use the Enquiry form on this page — our staff will help you directly!",
+        matched: false
+      });
+    }
+    if (action === 'save_chatbot_faq' && req.method === 'POST') {
+      if (!isAdmin(req)) return err(res, 'Unauthorized', 401);
+      const { id, question, answer, keywords } = body;
+      if (!question || !answer) return err(res, 'Question and answer are required.');
+      const kwArr = Array.isArray(keywords) ? keywords : String(keywords || '').split(',').map(k => k.trim()).filter(Boolean);
+      const doc = { question, answer, keywords: kwArr, updated_at: nowIso() };
+      if (id) {
+        const oid = toOid(id); if (!oid) return err(res, 'Bad id');
+        await db.collection('chatbot_faqs').updateOne({ _id: oid }, { $set: doc });
+        return ok(res, { data: mapDoc({ ...doc, _id: oid }) });
+      } else {
+        doc.created_at = nowIso();
+        const r = await db.collection('chatbot_faqs').insertOne(doc);
+        return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
+      }
+    }
+    if (action === 'delete_chatbot_faq' && req.method === 'POST') {
+      if (!isAdmin(req)) return err(res, 'Unauthorized', 401);
+      const oid = toOid(body.id); if (!oid) return err(res, 'Missing id');
+      await db.collection('chatbot_faqs').deleteOne({ _id: oid });
+      return ok(res, {});
+    }
+
     if (action === 'admission_status' && req.method === 'GET') {
       const row = await db.collection('settings').findOne({ key: 'admission_open' });
       return ok(res, { open: row ? row.value === 'true' : false });
@@ -770,12 +821,124 @@ if (
       return ok(res, {});
     }
 
+    /* ═══════════ CERTIFICATES: Transfer Certificate / Character Certificate / Experience Letter ═══════════ */
+    // Search confirmed students by Student ID, Application Number, Name, or Class — used to pick
+    // who a Transfer Certificate or Character Certificate is being issued for.
+    if (action === 'search_students_for_cert' && req.method === 'GET') {
+      const q = String(req.query.q || '').trim();
+      const className = String(req.query.class_name || '').trim();
+      const filter = {};
+      if (className) filter.applying_class = className;
+      if (q) {
+        filter.$or = [
+          { student_id: q }, { application_number: { $regex: q, $options: 'i' } },
+          { student_name: { $regex: q, $options: 'i' } }, { exam_roll_no: { $regex: q, $options: 'i' } }
+        ];
+      }
+      const list = await db.collection('fee_students').find(filter).limit(30).toArray();
+      return ok(res, { data: mapDocs(list) });
+    }
+    // Search staff by Staff ID, Application Number, or Name — used for Experience Letters.
+    if (action === 'search_staff_for_cert' && req.method === 'GET') {
+      const q = String(req.query.q || '').trim();
+      const filter = {};
+      if (q) {
+        filter.$or = [
+          { staff_id: q }, { application_number: { $regex: q, $options: 'i' } },
+          { name: { $regex: q, $options: 'i' } }
+        ];
+      }
+      const list = await db.collection('staff').find(filter).limit(30).toArray();
+      return ok(res, { data: mapDocs(list) });
+    }
+    // Generate the next certificate number, e.g. ICA-TC-2026-0001 — a fresh sequence per type per year,
+    // padded to at least 4 digits as requested.
+    async function nextCertNo(prefix) {
+      const year = String(new Date().getFullYear());
+      const counter = await db.collection('app_counters').findOneAndUpdate(
+        { form_key: 'cert_' + prefix + '_' + year },
+        { $inc: { last_number: 1 } },
+        { upsert: true, returnDocument: 'after' }
+      );
+      const seq = (counter && counter.last_number) || 1;
+      return `ICA-${prefix}-${year}-${String(seq).padStart(4, '0')}`;
+    }
+    // Issue a Transfer Certificate or Character Certificate for a student.
+    if (action === 'generate_certificate' && req.method === 'POST') {
+      const { type, student_fee_id, ...fields } = body;
+      if (!['tc', 'character'].includes(type)) return err(res, 'Invalid certificate type.');
+      const oid = toOid(student_fee_id); if (!oid) return err(res, 'Select a student first.');
+      const student = await db.collection('fee_students').findOne({ _id: oid });
+      if (!student) return err(res, 'Student not found.');
+      // Re-use the same certificate (and its number) if one of this type already exists for this
+      // student, so re-printing / correcting details never creates a duplicate number.
+      let existing = await db.collection('certificates').findOne({ type, student_fee_id: String(oid) });
+      const certNo = (existing && existing.cert_no) || await nextCertNo(type === 'tc' ? 'TC' : 'CC');
+      const doc = {
+        type, student_fee_id: String(oid), cert_no: certNo,
+        student_name: student.student_name, application_number: student.application_number,
+        applying_class: student.applying_class, section: student.section || '',
+        father_name: student.father_name || '', photo_url: student.photo_url || '',
+        ...fields, updated_at: nowIso()
+      };
+      if (existing) {
+        await db.collection('certificates').updateOne({ _id: existing._id }, { $set: doc });
+        return ok(res, { data: mapDoc({ ...doc, _id: existing._id }) });
+      } else {
+        doc.created_at = nowIso();
+        const r = await db.collection('certificates').insertOne(doc);
+        return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
+      }
+    }
+    // Issue an Experience Letter for a staff member.
+    if (action === 'generate_experience_letter' && req.method === 'POST') {
+      const { staff_fee_id, ...fields } = body;
+      const oid = toOid(staff_fee_id); if (!oid) return err(res, 'Select a staff member first.');
+      const staff = await db.collection('staff').findOne({ _id: oid });
+      if (!staff) return err(res, 'Staff member not found.');
+      let existing = await db.collection('certificates').findOne({ type: 'experience', student_fee_id: String(oid) });
+      const refNo = (existing && existing.ref_no) || await nextCertNo('EXP');
+      const doc = {
+        type: 'experience', student_fee_id: String(oid), ref_no: refNo,
+        student_name: staff.name, application_number: staff.application_number,
+        position: staff.position || '', department: staff.department || '', photo_url: staff.photo_url || '',
+        ...fields, updated_at: nowIso()
+      };
+      if (existing) {
+        await db.collection('certificates').updateOne({ _id: existing._id }, { $set: doc });
+        return ok(res, { data: mapDoc({ ...doc, _id: existing._id }) });
+      } else {
+        doc.created_at = nowIso();
+        const r = await db.collection('certificates').insertOne(doc);
+        return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
+      }
+    }
+    if (action === 'list_certificates' && req.method === 'GET') {
+      const filter = {};
+      if (req.query.type) filter.type = req.query.type;
+      const list = await db.collection('certificates').find(filter).sort({ created_at: -1 }).limit(200).toArray();
+      return ok(res, { data: mapDocs(list) });
+    }
+    if (action === 'delete_certificate' && req.method === 'POST') {
+      const oid = toOid(body.id); if (!oid) return err(res, 'Missing id');
+      await db.collection('certificates').deleteOne({ _id: oid });
+      return ok(res, {});
+    }
+
     if (action === 'add_notice' && req.method === 'POST') {
       const { title, category, content } = body;
       if (!title) return err(res, 'Title required');
       const doc = { title, category: category || 'Announcement', content: content || '', created_at: nowIso() };
       const r = await db.collection('notices').insertOne(doc);
       return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
+    }
+    if (action === 'update_notice' && req.method === 'POST') {
+      const { id, title, category, content } = body;
+      const oid = toOid(id); if (!oid) return err(res, 'Missing id');
+      if (!title) return err(res, 'Title required');
+      const setFields = { title, category: category || 'Announcement', content: content || '', updated_at: nowIso() };
+      await db.collection('notices').updateOne({ _id: oid }, { $set: setFields });
+      return ok(res, { data: mapDoc({ ...(await db.collection('notices').findOne({ _id: oid })) }) });
     }
     if (action === 'delete_notice' && req.method === 'POST') {
       const oid = toOid(body.id); if (!oid) return err(res, 'Missing id');
@@ -1299,6 +1462,162 @@ if (
       }});
     }
 
+    // ── ACCOUNTS PANEL — Add a pre-existing ("legacy") student who was never entered via the
+    // online admission form, so their Previous Dues can be recorded. Generates a real
+    // Application Number and Student ID exactly like the homepage admission flow — but using
+    // the admission YEAR the accountant selects (so an old 2023 student gets an ICA/2023/xxxx
+    // number, not today's year), while sharing the SAME year-counter as the public form so
+    // numbers never collide.
+    if (action === 'acc_add_legacy_student' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const { student_name, father_name, dob, applying_class, section, admission_year } = body;
+      if (!student_name || !applying_class || !admission_year) return err(res, 'Name, Class and Admission Year are required.');
+      const yearPrefix = String(admission_year).split('-')[0];
+
+      let appNumber = '';
+      try {
+        const counter = await db.collection('app_counters').findOneAndUpdate(
+          { academic_year: String(admission_year) },
+          { $inc: { last_number: 1 } },
+          { upsert: true, returnDocument: 'after' }
+        );
+        const nextNum = counter && counter.last_number ? counter.last_number : 1;
+        appNumber = 'ICA/' + yearPrefix + '/' + String(nextNum).padStart(4, '0');
+      } catch { appNumber = 'ICA/' + yearPrefix + '/' + Date.now().toString().slice(-4); }
+
+      const admDoc = {
+        application_number: appNumber, student_name, father_name: father_name || '', dob: dob || '',
+        applying_class, contact_phone: '', status: 'Confirmed', academic_year: String(admission_year),
+        source: 'accounts_backfill', created_at: nowIso()
+      };
+      await db.collection('admissions').insertOne(admDoc);
+
+      const studentId = await generateUniqueNumericId(db, 'fee_students', 'student_id', 3);
+      const feeDoc = {
+        application_number: appNumber, student_name, applying_class, section: section || '',
+        father_name: father_name || '', student_id: studentId, academic_year: String(admission_year),
+        fee_breakdown: { tuition: 0, computer: 0, library: 0, custom: [] }, monthly_fee: 0,
+        exam_allowed: true, van_applicable: false, other_applicable: false,
+        created_at: nowIso(), updated_at: nowIso()
+      };
+      const r = await db.collection('fee_students').insertOne(feeDoc);
+      return ok(res, { data: mapDoc({ ...feeDoc, _id: r.insertedId }), application_number: appNumber });
+    }
+
+    // ── Previous Dues (arrears from before this system was in use) ──
+    if (action === 'acc_add_previous_due' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const { application_number, student_name, class_name, month, item, amount_due, amount_paid, note } = body;
+      if (!application_number || !month || !item) return err(res, 'Student, Month and Fee Item are required.');
+      const doc = {
+        application_number, student_name: student_name || '', class_name: class_name || '',
+        month, item, amount_due: Number(amount_due) || 0, amount_paid: Number(amount_paid) || 0,
+        note: note || '', created_at: nowIso()
+      };
+      const r = await db.collection('previous_dues').insertOne(doc);
+      return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
+    }
+    if (action === 'acc_list_previous_dues' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const filter = {};
+      if (req.query.application_number) filter.application_number = req.query.application_number;
+      const list = await db.collection('previous_dues').find(filter).sort({ created_at: -1 }).toArray();
+      return ok(res, { data: mapDocs(list) });
+    }
+    if (action === 'acc_delete_previous_due' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const oid = toOid(body.id); if (!oid) return err(res, 'Missing id');
+      await db.collection('previous_dues').deleteOne({ _id: oid });
+      return ok(res, {});
+    }
+
+    // ── Expenses (school spending — salaries excluded, tracked separately below) ──
+    if (action === 'acc_add_expense' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const { date, category, amount, paid_to, note } = body;
+      if (!date || !category || !amount) return err(res, 'Date, Category and Amount are required.');
+      const doc = { date, category, amount: Number(amount) || 0, paid_to: paid_to || '', note: note || '', created_at: nowIso() };
+      const r = await db.collection('expenses').insertOne(doc);
+      return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
+    }
+    if (action === 'acc_list_expenses' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const filter = {};
+      if (req.query.from || req.query.to) {
+        filter.date = {};
+        if (req.query.from) filter.date.$gte = req.query.from;
+        if (req.query.to) filter.date.$lte = req.query.to;
+      }
+      const list = await db.collection('expenses').find(filter).sort({ date: -1 }).toArray();
+      return ok(res, { data: mapDocs(list) });
+    }
+    if (action === 'acc_delete_expense' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const oid = toOid(body.id); if (!oid) return err(res, 'Missing id');
+      await db.collection('expenses').deleteOne({ _id: oid });
+      return ok(res, {});
+    }
+
+    // ── Financial Summary — Day / Month / Quarter / Year view combining Fee received,
+    // Previous Dues collected, Salary paid, and Expenses, with a category-wise breakdown.
+    if (action === 'acc_financial_summary' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const period = req.query.period || 'monthly'; // daily | monthly | quarterly | yearly
+      const [feePayments, prevDues, salaryPayments, expenses, students] = await Promise.all([
+        db.collection('fee_payments').find({}).toArray(),
+        db.collection('previous_dues').find({}).toArray(),
+        db.collection('salary_payments').find({}).toArray(),
+        db.collection('expenses').find({}).toArray(),
+        db.collection('fee_students').find({}).toArray()
+      ]);
+
+      function bucketKey(dateStr) {
+        const d = new Date(dateStr); if (isNaN(d)) return 'Unknown';
+        const y = d.getFullYear(), m = d.getMonth(); // 0-indexed
+        if (period === 'daily') return d.toISOString().slice(0, 10);
+        if (period === 'monthly') return y + '-' + String(m + 1).padStart(2, '0');
+        if (period === 'quarterly') return y + '-Q' + (Math.floor(m / 3) + 1);
+        return String(y); // yearly
+      }
+
+      const buckets = {}; // key -> { fee_received, dues_received, salary_paid, expenses, expense_by_category:{} }
+      function getBucket(key) {
+        if (!buckets[key]) buckets[key] = { period: key, fee_received: 0, dues_received: 0, salary_paid: 0, expenses: 0, expense_by_category: {} };
+        return buckets[key];
+      }
+
+      feePayments.forEach(p => { const k = bucketKey(p.paid_on || p.created_at); getBucket(k).fee_received += (p.amount || 0); });
+      prevDues.forEach(p => { const k = bucketKey(p.created_at); getBucket(k).dues_received += (p.amount_paid || 0); });
+      salaryPayments.forEach(p => { const k = bucketKey(p.paid_on || p.created_at); getBucket(k).salary_paid += (p.amount || 0); });
+      expenses.forEach(e => {
+        const k = bucketKey(e.date || e.created_at); const b = getBucket(k);
+        b.expenses += (e.amount || 0);
+        b.expense_by_category[e.category] = (b.expense_by_category[e.category] || 0) + (e.amount || 0);
+      });
+
+      const totalMonthlyExpected = students.reduce((s, x) => s + (x.monthly_fee || 0), 0);
+      const totalDuesOutstanding = prevDues.reduce((s, p) => s + Math.max(0, (p.amount_due || 0) - (p.amount_paid || 0)), 0);
+      const totalFeeReceivedAllTime = feePayments.reduce((s, p) => s + (p.amount || 0), 0);
+      const totalSalaryPaidAllTime = salaryPayments.reduce((s, p) => s + (p.amount || 0), 0);
+      const totalExpensesAllTime = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+
+      const rows = Object.values(buckets).sort((a, b) => a.period < b.period ? 1 : -1).map(b => ({
+        ...b, net: b.fee_received + b.dues_received - b.salary_paid - b.expenses
+      }));
+
+      return ok(res, { data: {
+        period, rows,
+        totals: {
+          fee_received_all_time: totalFeeReceivedAllTime,
+          salary_paid_all_time: totalSalaryPaidAllTime,
+          expenses_all_time: totalExpensesAllTime,
+          dues_outstanding: totalDuesOutstanding,
+          monthly_fee_expected: totalMonthlyExpected,
+          net_all_time: totalFeeReceivedAllTime - totalSalaryPaidAllTime - totalExpensesAllTime
+        }
+      }});
+    }
+
     // ── ACCOUNTS PANEL — Staff / Teacher Salary ─────────────────
     if (action === 'acc_list_staff' && req.method === 'GET') {
       if (!(await requireAccounts(req, res, db))) return;
@@ -1466,6 +1785,8 @@ app.get('/verify-id', async (req, res) => {
     let record = null;
     if (oid && type === 'staff') record = await db.collection('staff').findOne({ _id: oid });
     else if (oid && type === 'student') record = await db.collection('fee_students').findOne({ _id: oid });
+    else if (oid && type === 'marksheet') record = await db.collection('results').findOne({ _id: oid, category: 'academic' });
+    else if (oid && type === 'certificate') record = await db.collection('certificates').findOne({ _id: oid });
 
     if (!record) {
       html = `<div class="vcard bad"><div class="vicon">&#10060;</div><h2>Invalid ID Card</h2><p>This QR code does not match any active record. If you believe this is an error, please contact the school office.</p></div>`;
@@ -1481,6 +1802,34 @@ app.get('/verify-id', async (req, res) => {
           <tr><td>Type</td><td>${record.staff_type === 'non_teaching' ? 'Non-Teaching' : 'Teaching'}</td></tr>
           <tr><td>Designation</td><td>${escHtml(record.position || '-')}</td></tr>
           <tr><td>Department</td><td>${escHtml(record.department || '-')}</td></tr>
+        </table>
+      </div>`;
+    } else if (type === 'marksheet') {
+      // Deliberately minimal — only what's needed to confirm the marksheet is genuine:
+      // school name, student name, roll number, class and marksheet number.
+      // No marks, percentage, grade, address or father's name are shown here.
+      html = `<div class="vcard good">
+        <div class="vicon">&#128203;</div>
+        <h2>${escHtml(record.student_name)}</h2>
+        <div class="vbadge ok">&#9989; Genuine ICA Marksheet</div>
+        <table class="vtbl">
+          <tr><td>Roll No.</td><td><b>${escHtml(record.roll_no || '-')}</b></td></tr>
+          <tr><td>Class</td><td>${escHtml(record.class_name || '-')}${record.section ? (' - ' + escHtml(record.section)) : ''}</td></tr>
+          <tr><td>Marksheet No.</td><td>${escHtml(record.marksheet_no || '-')}</td></tr>
+          <tr><td>Exam</td><td>${escHtml(record.exam_name || '-')}</td></tr>
+        </table>
+      </div>`;
+    } else if (type === 'certificate') {
+      const certLabel = { tc: 'Transfer Certificate', character: 'Character Certificate', experience: 'Experience Letter' }[record.type] || 'Certificate';
+      html = `<div class="vcard good">
+        ${record.photo_url ? `<img class="vphoto" src="${escHtml(record.photo_url)}"/>` : '<div class="vphoto vnoimg">No Photo</div>'}
+        <h2>${escHtml(record.student_name)}</h2>
+        <div class="vbadge ok">&#9989; Genuine ${escHtml(certLabel)}</div>
+        <table class="vtbl">
+          <tr><td>Certificate No.</td><td><b>${escHtml(record.cert_no || record.ref_no || '-')}</b></td></tr>
+          ${record.applying_class ? `<tr><td>Class</td><td>${escHtml(record.applying_class)}${record.section ? (' - ' + escHtml(record.section)) : ''}</td></tr>` : ''}
+          ${record.position ? `<tr><td>Designation</td><td>${escHtml(record.position)}</td></tr>` : ''}
+          <tr><td>Issued On</td><td>${escHtml(new Date(record.created_at).toLocaleDateString('en-IN'))}</td></tr>
         </table>
       </div>`;
     } else {

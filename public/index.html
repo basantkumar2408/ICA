@@ -108,7 +108,8 @@ html{scroll-behavior:smooth;}
 }
 body{font-family:"Inter",sans-serif;color:var(--text);background:var(--white);line-height:1.5;}
 /* ═══ Landing Page Redesign (public site only — Admin Panel CSS below is untouched) ═══ */
-.topbar{background:var(--pub-primary);color:rgba(255,255,255,.88);font-size:12.5px;position:fixed;top:0;left:0;right:0;z-index:1001;}
+.topbar{background:var(--pub-primary);color:rgba(255,255,255,.88);font-size:12.5px;position:fixed;top:0;left:0;right:0;z-index:1001;transition:transform .25s ease,opacity .2s ease;}
+.topbar.hide{transform:translateY(-100%);opacity:0;pointer-events:none;}
 .topbar-inner{max-width:1200px;margin:auto;padding:7px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
 .topbar-left{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
 .topbar-left a{color:rgba(255,255,255,.88);text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:500;}
@@ -116,7 +117,7 @@ body{font-family:"Inter",sans-serif;color:var(--text);background:var(--white);li
 .topbar-social{display:flex;align-items:center;gap:10px;}
 .topbar-social a{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;font-size:12px;transition:all .2s;}
 .topbar-social a:hover{background:var(--pub-accent);color:var(--pub-primary);transform:translateY(-1px);}
-nav{position:fixed;top:30px;left:0;right:0;z-index:1000;background:rgba(30,58,138,.97);backdrop-filter:blur(12px);border-bottom:1px solid rgba(250,204,21,.18);transition:top .25s;}
+nav{position:fixed;top:30px;left:0;right:0;z-index:1000;background:rgba(30,58,138,.97);backdrop-filter:blur(12px);border-bottom:1px solid rgba(250,204,21,.18);transition:top .25s ease;}
 nav.scrolled{top:0;box-shadow:0 4px 20px rgba(0,0,0,.15);}
 .nav-inner{max-width:1200px;margin:auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:66px;}
 .nav-logo{display:flex;align-items:center;gap:11px;text-decoration:none;}
@@ -159,11 +160,11 @@ nav.scrolled{top:0;box-shadow:0 4px 20px rgba(0,0,0,.15);}
 .hero-stat:hover{transform:translateY(-3px);background:rgba(255,255,255,.12);}
 .hero-stat-num{font-family:"Poppins",sans-serif;font-size:28px;font-weight:800;color:var(--pub-accent);}
 .hero-stat-label{font-size:11.5px;color:rgba(255,255,255,.6);margin-top:4px;}
-.hero-card{background:rgba(255,255,255,.07);backdrop-filter:blur(14px);border:1px solid rgba(250,204,21,.2);border-radius:var(--rxl);padding:28px;position:relative;min-height:380px;display:flex;align-items:center;justify-content:center;overflow:visible;}
-.hero-visual-glow{position:absolute;inset:0;background:radial-gradient(circle at 60% 30%,rgba(250,204,21,.18),transparent 60%);border-radius:var(--rxl);}
-.hero-building-img{width:100%;height:340px;object-fit:cover;border-radius:16px;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.3);}
-.hero-building-placeholder{width:100%;height:340px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.03));display:flex;align-items:center;justify-content:center;font-size:80px;position:relative;}
-.hero-students-img{position:absolute;bottom:-24px;left:-24px;width:150px;height:150px;object-fit:cover;border-radius:16px;border:4px solid var(--white);box-shadow:0 12px 30px rgba(0,0,0,.35);}
+.hero-card{background:rgba(255,255,255,.07);backdrop-filter:blur(14px);border:1px solid rgba(250,204,21,.2);border-radius:var(--rxl);padding:0;position:relative;min-height:380px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.hero-visual-glow{position:absolute;inset:0;background:radial-gradient(circle at 60% 30%,rgba(250,204,21,.18),transparent 60%);border-radius:var(--rxl);pointer-events:none;z-index:1;}
+.hero-building-img{width:100%;height:100%;min-height:380px;object-fit:cover;position:relative;}
+.hero-building-placeholder{width:100%;height:380px;background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.03));display:flex;align-items:center;justify-content:center;font-size:80px;position:relative;}
+.hero-students-img{position:absolute;bottom:16px;left:16px;width:130px;height:130px;object-fit:cover;border-radius:14px;border:4px solid var(--white);box-shadow:0 12px 30px rgba(0,0,0,.35);z-index:2;}
 .hc-avatar{width:72px;height:72px;background:linear-gradient(135deg,var(--pub-accent),#fde047);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 14px;}
 .hc-name{font-family:"Poppins",sans-serif;font-size:17px;color:var(--white);text-align:center;}
 .hc-title{font-size:11.5px;color:var(--gold-light);text-align:center;letter-spacing:.05em;margin-bottom:20px;margin-top:3px;}
@@ -201,7 +202,10 @@ section{padding:84px 0;}
 .notice-ticker-label{background:var(--gold);color:var(--navy);font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:6px;white-space:nowrap;}
 .notice-ticker-text{color:rgba(255,255,255,.8);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .notices-pub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
-.npcard{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:22px;transition:all .2s;}
+.npcard{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-left:3px solid var(--pub-accent);border-radius:var(--rxl);padding:22px;transition:all .25s;}
+.npcard:hover{background:rgba(255,255,255,.09);transform:translateY(-4px);box-shadow:0 12px 26px rgba(0,0,0,.25);}
+.npcard h4{font-family:"Poppins",sans-serif;font-size:15.5px;margin-bottom:6px;}
+.npcard p{font-size:13px;line-height:1.6;color:rgba(255,255,255,.65);}
 .npcard:hover{background:rgba(255,255,255,.08);border-color:rgba(201,152,42,.3);}
 .npcard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .ncat{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:100px;}
@@ -262,6 +266,33 @@ section{padding:84px 0;}
 .reveal-zoom{opacity:0;transform:scale(.92);transition:opacity .6s ease,transform .6s ease;}
 .reveal-zoom.in-view{opacity:1;transform:scale(1);}
 @media (prefers-reduced-motion: reduce){.reveal,.reveal-zoom{opacity:1;transform:none;transition:none;}}
+.cert-search-row{margin-bottom:10px;}
+.cert-results{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:220px;overflow-y:auto;}
+.cert-result-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s;}
+.cert-result-item:hover{border-color:var(--gold);background:#fdf8f0;}
+.cert-result-item img{width:34px;height:34px;border-radius:50%;object-fit:cover;}
+.cert-result-item .crname{font-weight:700;font-size:13px;color:var(--navy);}
+.cert-result-item .crsub{font-size:11px;color:var(--muted);}
+/* AI Chatbot Widget */
+#chatbot-bubble{position:fixed;bottom:24px;right:24px;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--pub-primary),var(--pub-secondary));display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;cursor:pointer;box-shadow:0 8px 24px rgba(30,58,138,.4);z-index:1500;transition:transform .2s;}
+#chatbot-bubble:hover{transform:scale(1.08);}
+#chatbot-window{position:fixed;bottom:94px;right:24px;width:340px;max-width:90vw;height:460px;max-height:70vh;background:#fff;border-radius:var(--rxl);box-shadow:0 20px 50px rgba(0,0,0,.25);display:none;flex-direction:column;overflow:hidden;z-index:1500;}
+#chatbot-window.open{display:flex;}
+.cb-head{background:linear-gradient(120deg,var(--pub-primary),var(--pub-secondary));color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;}
+.cb-head-title{font-family:"Poppins",sans-serif;font-weight:700;font-size:14.5px;}
+.cb-head-sub{font-size:10.5px;color:rgba(255,255,255,.75);}
+.cb-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;}
+.cb-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#f4f6fb;}
+.cb-msg{max-width:82%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;}
+.cb-msg.bot{background:#fff;border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:4px;}
+.cb-msg.user{background:var(--pub-secondary);color:#fff;align-self:flex-end;border-bottom-right-radius:4px;}
+.cb-quick{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px;}
+.cb-quick button{background:#eef2ff;border:1px solid #dbe4ff;color:var(--pub-primary);font-size:11px;padding:6px 11px;border-radius:100px;cursor:pointer;font-weight:600;}
+.cb-quick button:hover{background:var(--pub-accent);border-color:var(--pub-accent);}
+.cb-input-row{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);}
+.cb-input-row input{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:100px;font-size:13px;outline:none;}
+.cb-input-row button{width:38px;height:38px;border-radius:50%;background:var(--pub-primary);color:#fff;border:none;cursor:pointer;font-size:15px;}
+@media(max-width:600px){ #chatbot-window{right:10px;bottom:80px;width:calc(100vw - 20px);} #chatbot-bubble{right:16px;bottom:16px;} }
 footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
 .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:48px;margin-bottom:40px;}
 .footer-brand-name{font-family:"Playfair Display",serif;font-size:17px;color:var(--white);font-weight:700;margin-bottom:10px;}
@@ -446,7 +477,9 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
 .toast.show{transform:translateY(0);opacity:1;}
 @media(max-width:960px){
   .hero-inner,.about-grid,.principal-grid,.contact-grid,.footer-grid{grid-template-columns:1fr;}
-  .hero-card{display:none;}
+  .hero-card{order:-1;min-height:220px;}
+  .hero-card .hero-students-img{width:90px;height:90px;}
+  .hero-building-img,.hero-building-placeholder{min-height:220px;height:220px;font-size:48px;}
   .hero{min-height:auto;padding-top:74px;padding-bottom:56px;}
   .hero-inner{padding:36px 24px;gap:32px;}
   section{padding:52px 0;}
@@ -751,6 +784,9 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       <div class="fg" style="margin-top:12px;"><label>Date of Birth</label><input type="date" id="trk-dob" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;"/></div>
       <button class="btn-primary" style="width:100%;margin-top:16px;" onclick="trackApplication()">Check Now</button>
       <div id="trk-error" style="color:#dc2626;font-size:12.5px;margin-top:10px;display:none;"></div>
+      <div style="text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+        <a href="#" onclick="showAccLogin();return false;" style="font-size:12.5px;color:var(--pub-secondary);font-weight:600;text-decoration:none;">&#128100; Staff / Accounts Login &rarr;</a>
+      </div>
     </div>
     <div id="trk-reset-wrap" style="max-width:700px;margin:0 auto;text-align:right;display:none;">
       <button class="btn-vw" style="margin-top:14px;" onclick="trkReset()">&#128682; Check Another / Logout</button>
@@ -1023,6 +1059,12 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       <div class="sb-sec">ID Cards</div>
       <div class="sb-item" id="nav-staffid" onclick="showPanel('staffid')"><span class="sb-icon">&#128395;</span>Staff ID Cards</div>
       <div class="sb-item" id="nav-studentid" onclick="showPanel('studentid')"><span class="sb-icon">&#127891;</span>Student ID Cards</div>
+      <div class="sb-sec">Certificates</div>
+      <div class="sb-item" id="nav-tc" onclick="showPanel('tc')"><span class="sb-icon">&#128196;</span>Transfer Certificate</div>
+      <div class="sb-item" id="nav-character" onclick="showPanel('character')"><span class="sb-icon">&#128221;</span>Character Certificate</div>
+      <div class="sb-item" id="nav-experience" onclick="showPanel('experience')"><span class="sb-icon">&#128188;</span>Experience Letter</div>
+      <div class="sb-sec">Website</div>
+      <div class="sb-item" id="nav-chatbot" onclick="showPanel('chatbot')"><span class="sb-icon">&#128172;</span>Chatbot FAQs</div>
       <div class="sb-sec">Settings</div>
       <div class="sb-item" id="nav-sitesettings" onclick="showPanel('sitesettings')"><span class="sb-icon">&#9881;</span>Site Settings</div>
       <div class="sb-item" onclick="openAccountsPanel()"><span class="sb-icon">&#128176;</span>Accounts Panel</div>
@@ -1351,6 +1393,62 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
         </div>
       </div>
 
+      <!-- TRANSFER CERTIFICATE -->
+      <div class="admin-panel" id="panel-tc">
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Transfer Certificate</div></div>
+          <div class="cert-search-row">
+            <input class="fi" type="text" id="cert-search-tc" placeholder="Search by Student ID, Application No, Name, or Roll No..." style="flex:1;min-width:260px;" oninput="searchStudentsForCert('tc')"/>
+          </div>
+          <div id="cert-results-tc" class="cert-results"></div>
+          <div id="cert-form-tc"></div>
+        </div>
+      </div>
+
+      <!-- CHARACTER CERTIFICATE -->
+      <div class="admin-panel" id="panel-character">
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Character Certificate</div></div>
+          <div class="cert-search-row">
+            <input class="fi" type="text" id="cert-search-character" placeholder="Search by Student ID, Application No, Name, or Roll No..." style="flex:1;min-width:260px;" oninput="searchStudentsForCert('character')"/>
+          </div>
+          <div id="cert-results-character" class="cert-results"></div>
+          <div id="cert-form-character"></div>
+        </div>
+      </div>
+
+      <!-- EXPERIENCE LETTER -->
+      <div class="admin-panel" id="panel-experience">
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Experience Letter (Staff)</div></div>
+          <div class="cert-search-row">
+            <input class="fi" type="text" id="cert-search-experience" placeholder="Search by Staff ID, Application No, or Name..." style="flex:1;min-width:260px;" oninput="searchStaffForCert()"/>
+          </div>
+          <div id="cert-results-experience" class="cert-results"></div>
+          <div id="cert-form-experience"></div>
+        </div>
+      </div>
+
+      <!-- CHATBOT FAQs -->
+      <div class="admin-panel" id="panel-chatbot">
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Add / Edit a FAQ</div></div>
+          <p style="font-size:11.5px;color:var(--muted);margin-bottom:12px;">The website's chat assistant matches visitor questions against these Q&amp;A pairs by keyword. Add keywords a parent might actually type (comma-separated).</p>
+          <input type="hidden" id="cb-edit-id"/>
+          <div class="fg"><label>Question (shown as a quick-reply button)</label><input type="text" id="cb-question" placeholder="e.g. What documents are needed for admission?"/></div>
+          <div class="fg"><label>Answer</label><textarea id="cb-answer" rows="3" placeholder="e.g. Birth certificate, previous school TC, 2 passport photos, and Aadhaar card of the child."></textarea></div>
+          <div class="fg"><label>Keywords (comma-separated)</label><input type="text" id="cb-keywords" placeholder="e.g. documents, admission, papers, required"/></div>
+          <button class="btn-add" onclick="saveChatbotFaq()">Save FAQ</button>
+        </div>
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">All FAQs</div></div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Question</th><th>Answer</th><th>Keywords</th><th></th></tr></thead>
+            <tbody id="chatbot-faqs-body"><tr><td colspan="4" class="no-data">Loading...</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
       <div class="admin-panel" id="panel-sitesettings">
         <div class="acard">
           <div class="acard-head"><div class="acard-title">Admission Year</div></div>
@@ -1391,44 +1489,52 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
                 <label>School Stamp / Seal (Mohar)</label>
                 <img id="prev-stamp" src="" style="display:none;max-width:110px;max-height:110px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;"/>
                 <input type="file" id="file-stamp" accept="image/*" onchange="uploadSettingAsset(this,'school_stamp_url','prev-stamp')"/>
+                <button type="button" class="btn-del" style="font-size:10.5px;padding:3px 9px;margin-top:5px;" onclick="removeSettingAsset('school_stamp_url','prev-stamp','file-stamp')">&#10005; Remove</button>
               </div>
               <div class="fg" style="max-width:200px;">
                 <label>Principal Photo <span style="color:var(--muted);font-weight:400;">(Homepage only)</span></label>
                 <img id="prev-principal-photo" src="" style="display:none;max-width:110px;max-height:110px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;object-fit:cover;"/>
                 <input type="file" id="file-principal-photo" accept="image/*" onchange="uploadSettingAsset(this,'principal_photo_url','prev-principal-photo')"/>
+                <button type="button" class="btn-del" style="font-size:10.5px;padding:3px 9px;margin-top:5px;" onclick="removeSettingAsset('principal_photo_url','prev-principal-photo','file-principal-photo')">&#10005; Remove</button>
               </div>
               <div class="fg" style="max-width:200px;">
                 <label>School Image <span style="color:var(--muted);font-weight:400;">(Homepage)</span></label>
                 <img id="prev-school-image" src="" style="display:none;max-width:110px;max-height:110px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;object-fit:cover;"/>
                 <input type="file" id="file-school-image" accept="image/*" onchange="uploadSettingAsset(this,'school_image_url','prev-school-image')"/>
+                <button type="button" class="btn-del" style="font-size:10.5px;padding:3px 9px;margin-top:5px;" onclick="removeSettingAsset('school_image_url','prev-school-image','file-school-image')">&#10005; Remove</button>
               </div>
               <div class="fg" style="max-width:200px;">
                 <label>Site Logo <span style="color:var(--muted);font-weight:400;">(Navbar)</span></label>
                 <img id="prev-site-logo" src="" style="display:none;max-width:110px;max-height:110px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;object-fit:cover;"/>
                 <input type="file" id="file-site-logo" accept="image/*" onchange="uploadSettingAsset(this,'site_logo_url','prev-site-logo')"/>
+                <button type="button" class="btn-del" style="font-size:10.5px;padding:3px 9px;margin-top:5px;" onclick="removeSettingAsset('site_logo_url','prev-site-logo','file-site-logo')">&#10005; Remove</button>
                 <p style="font-size:10.5px;color:var(--muted);margin-top:4px;">If you don't select a new file and just leave this as-is, the current logo stays exactly as it is — nothing gets removed.</p>
               </div>
               <div class="fg" style="max-width:200px;">
                 <label>Hero Building Photo <span style="color:var(--muted);font-weight:400;">(Homepage banner)</span></label>
                 <img id="prev-hero-building" src="" style="display:none;max-width:110px;max-height:110px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;object-fit:cover;"/>
                 <input type="file" id="file-hero-building" accept="image/*" onchange="uploadSettingAsset(this,'hero_building_url','prev-hero-building')"/>
+                <button type="button" class="btn-del" style="font-size:10.5px;padding:3px 9px;margin-top:5px;" onclick="removeSettingAsset('hero_building_url','prev-hero-building','file-hero-building')">&#10005; Remove</button>
                 <p style="font-size:10.5px;color:var(--muted);margin-top:4px;">Not selecting a file keeps the existing photo unchanged.</p>
               </div>
               <div class="fg" style="max-width:200px;">
                 <label>Hero Students Photo <span style="color:var(--muted);font-weight:400;">(Homepage banner)</span></label>
                 <img id="prev-hero-students" src="" style="display:none;max-width:110px;max-height:110px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;object-fit:cover;"/>
                 <input type="file" id="file-hero-students" accept="image/*" onchange="uploadSettingAsset(this,'hero_students_url','prev-hero-students')"/>
+                <button type="button" class="btn-del" style="font-size:10.5px;padding:3px 9px;margin-top:5px;" onclick="removeSettingAsset('hero_students_url','prev-hero-students','file-hero-students')">&#10005; Remove</button>
                 <p style="font-size:10.5px;color:var(--muted);margin-top:4px;">Not selecting a file keeps the existing photo unchanged.</p>
               </div>
               <div class="fg" style="max-width:200px;">
                 <label>Office / HR Signature</label>
                 <img id="prev-sig-office" src="" style="display:none;max-width:150px;max-height:80px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;"/>
                 <input type="file" id="file-sig-office" accept="image/*" onchange="uploadSettingAsset(this,'sig_office_url','prev-sig-office')"/>
+                <button type="button" class="btn-del" style="font-size:10.5px;padding:3px 9px;margin-top:5px;" onclick="removeSettingAsset('sig_office_url','prev-sig-office','file-sig-office')">&#10005; Remove</button>
               </div>
               <div class="fg" style="max-width:200px;">
                 <label>Principal Signature</label>
                 <img id="prev-sig-principal" src="" style="display:none;max-width:150px;max-height:80px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;"/>
                 <input type="file" id="file-sig-principal" accept="image/*" onchange="uploadSettingAsset(this,'sig_principal_url','prev-sig-principal')"/>
+                <button type="button" class="btn-del" style="font-size:10.5px;padding:3px 9px;margin-top:5px;" onclick="removeSettingAsset('sig_principal_url','prev-sig-principal','file-sig-principal')">&#10005; Remove</button>
               </div>
             </div>
           </div>
@@ -1519,6 +1625,10 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       <div class="sb-item" id="accnav-pfrecord" onclick="showAccPanel('pfrecord')"><span class="sb-icon">&#128272;</span>PF Record</div>
       <div class="sb-sec">Admissions</div>
       <div class="sb-item" id="accnav-receipt" onclick="showAccPanel('receipt')"><span class="sb-icon">&#129534;</span>Search Receipt</div>
+      <div class="sb-sec">Reports</div>
+      <div class="sb-item" id="accnav-duesentry" onclick="showAccPanel('duesentry')"><span class="sb-icon">&#128221;</span>Previous Dues Entry</div>
+      <div class="sb-item" id="accnav-expenses" onclick="showAccPanel('expenses')"><span class="sb-icon">&#128184;</span>Expenses</div>
+      <div class="sb-item" id="accnav-summary" onclick="showAccPanel('summary')"><span class="sb-icon">&#128200;</span>Financial Summary</div>
     </div>
     <div class="sb-logout" onclick="doAccLogout()"><span class="sb-icon">&#128682;</span>Logout</div>
   </div>
@@ -1635,6 +1745,121 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
             <button class="btn-add" onclick="searchReceipt()">Search</button>
           </div>
           <div id="rcpt-result-box"></div>
+        </div>
+      </div>
+
+      <!-- PREVIOUS DUES ENTRY -->
+      <div class="admin-panel" id="accpanel-duesentry">
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Add a Previously-Existing Student</div></div>
+          <p style="font-size:11.5px;color:var(--muted);margin-bottom:12px;">For students who joined before this system was set up. This generates a real Application Number &amp; Student ID (using whichever year you pick below), so they show up everywhere else too — Fee Students, ID Cards, everything.</p>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg" style="max-width:180px;"><label>Admission Year</label><select id="dl-year"></select></div>
+            <div class="fg" style="max-width:200px;"><label>Class</label>
+              <select id="dl-class">
+                <option>Nursery</option><option>LKG</option><option>UKG</option>
+                <option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option>
+                <option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option>
+              </select>
+            </div>
+            <div class="fg" style="max-width:120px;"><label>Section</label><input type="text" id="dl-section" placeholder="A"/></div>
+          </div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg"><label>Student Name</label><input type="text" id="dl-name"/></div>
+            <div class="fg"><label>Father's Name</label><input type="text" id="dl-father"/></div>
+            <div class="fg" style="max-width:180px;"><label>Date of Birth</label><input type="date" id="dl-dob"/></div>
+          </div>
+          <button class="btn-add" onclick="addLegacyStudent()">+ Add Student &amp; Generate Application No.</button>
+        </div>
+
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Record a Previous / Pending Due</div></div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg" style="max-width:200px;"><label>Class</label>
+              <select id="du-class" onchange="duesEntryLoadStudents()">
+                <option value="">Select Class</option>
+                <option>Nursery</option><option>LKG</option><option>UKG</option>
+                <option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option>
+                <option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option>
+              </select>
+            </div>
+            <div class="fg" style="max-width:260px;"><label>Student</label><select id="du-student"><option value="">Select Class first...</option></select></div>
+            <div class="fg" style="max-width:160px;"><label>Month</label><input type="month" id="du-month"/></div>
+          </div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg" style="max-width:220px;"><label>Fee Item</label><input type="text" id="du-item" placeholder="e.g. Tuition Fee, Van Fee"/></div>
+            <div class="fg" style="max-width:150px;"><label>Amount Due (Rs.)</label><input type="number" id="du-due"/></div>
+            <div class="fg" style="max-width:150px;"><label>Amount Paid (Rs.)</label><input type="number" id="du-paid" value="0"/></div>
+          </div>
+          <div class="fg"><label>Note</label><input type="text" id="du-note"/></div>
+          <button class="btn-add" onclick="saveDueEntry()">Save Due Entry</button>
+        </div>
+
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">All Previous Dues</div></div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Student</th><th>Class</th><th>Month</th><th>Item</th><th>Due</th><th>Paid</th><th>Balance</th><th></th></tr></thead>
+            <tbody id="dues-body"><tr><td colspan="8" class="no-data">Loading...</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- EXPENSES -->
+      <div class="admin-panel" id="accpanel-expenses">
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Record an Expense</div></div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg" style="max-width:160px;"><label>Date</label><input type="date" id="ex-date" value="${new Date().toISOString().slice(0,10)}"/></div>
+            <div class="fg" style="max-width:200px;"><label>Category</label>
+              <select id="ex-category"><option>Salary</option><option>Electricity</option><option>Maintenance</option><option>Stationery</option><option>Transport / Fuel</option><option>Furniture</option><option>Events</option><option>Miscellaneous</option></select>
+            </div>
+            <div class="fg" style="max-width:150px;"><label>Amount (Rs.)</label><input type="number" id="ex-amount"/></div>
+            <div class="fg" style="max-width:200px;"><label>Paid To</label><input type="text" id="ex-paidto"/></div>
+          </div>
+          <div class="fg"><label>Note</label><input type="text" id="ex-note"/></div>
+          <button class="btn-add" onclick="addExpense()">+ Add Expense</button>
+        </div>
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title">Expense History</div>
+            <button class="btn-excel" onclick="exportExpensesCSV()">Download CSV</button>
+          </div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Paid To</th><th>Note</th><th></th></tr></thead>
+            <tbody id="expenses-body"><tr><td colspan="6" class="no-data">Loading...</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- FINANCIAL SUMMARY -->
+      <div class="admin-panel" id="accpanel-summary">
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title">Financial Summary</div>
+            <div style="display:flex;gap:8px;">
+              <select id="fs-period" onchange="loadFinancialSummary()">
+                <option value="daily">Day-wise</option>
+                <option value="monthly" selected>Month-wise</option>
+                <option value="quarterly">Quarter-wise</option>
+                <option value="yearly">Year-wise</option>
+              </select>
+              <button class="btn-excel" onclick="exportSummaryCSV()">Download CSV</button>
+            </div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card"><div class="stat-icon green">&#128176;</div><div class="stat-num" id="fs-fee-received">0</div><div class="stat-label">Total Fee Received</div></div>
+            <div class="stat-card"><div class="stat-icon amber">&#9203;</div><div class="stat-num" id="fs-dues-outstanding">0</div><div class="stat-label">Dues Still Outstanding</div></div>
+            <div class="stat-card"><div class="stat-icon teal">&#128101;</div><div class="stat-num" id="fs-salary-paid">0</div><div class="stat-label">Total Salary Paid</div></div>
+            <div class="stat-card"><div class="stat-icon red">&#128184;</div><div class="stat-num" id="fs-expenses">0</div><div class="stat-label">Total Expenses</div></div>
+            <div class="stat-card"><div class="stat-icon blue">&#128202;</div><div class="stat-num" id="fs-net">0</div><div class="stat-label">Net (Received - Spent)</div></div>
+          </div>
+        </div>
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title" id="fs-table-title">Month-wise Breakdown</div></div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Period</th><th>Fee Received</th><th>Dues Collected</th><th>Salary Paid</th><th>Expenses</th><th>Net</th></tr></thead>
+            <tbody id="fs-body"><tr><td colspan="6" class="no-data">Loading...</td></tr></tbody>
+          </table></div>
         </div>
       </div>
 
@@ -1789,7 +2014,7 @@ async function doLogin(){
 }
 
 function doLogout(auto){endSession();document.getElementById('adminOverlay').classList.remove('show');toast(auto?'Auto-logged out due to inactivity.':'Logged out.');}
-const TITLES={dashboard:'Dashboard',admissions:'Admission Applications',enquiries:'Parent Enquiries',notices:'Notices',gallery:'Gallery',testimonials:'Testimonials',formbuilder:'Admission Form Builder',customforms:'Custom Forms',results:'Examination',hiring:'Hiring / Recruitment',duty:'Staff Duty Roster',staffid:'Staff ID Cards',studentid:'Student ID Cards',sitesettings:'Site Settings',password:'Change Password'};
+const TITLES={dashboard:'Dashboard',admissions:'Admission Applications',enquiries:'Parent Enquiries',notices:'Notices',gallery:'Gallery',testimonials:'Testimonials',formbuilder:'Admission Form Builder',customforms:'Custom Forms',results:'Examination',hiring:'Hiring / Recruitment',duty:'Staff Duty Roster',staffid:'Staff ID Cards',studentid:'Student ID Cards',tc:'Transfer Certificate',character:'Character Certificate',experience:'Experience Letter',chatbot:'Chatbot FAQs',sitesettings:'Site Settings',password:'Change Password'};
 
 /* ═══════════════ ACCOUNTS PANEL (Fees, Invoices, Staff Salary) ═══════════════ */
 async function accGet(action, params){
@@ -1867,7 +2092,7 @@ function openAccountsPanel(){
   showAccPanel('dashboard');
 }
 
-const ACC_TITLES={dashboard:'Fee Dashboard',classfees:'Class Fee Structure',feestudents:'Student Fees & Invoices',staff:'Staff',salary:'Salary Payments',slip:'Salary Slip Generator',pfrecord:'PF Record',receipt:'Search Admission Receipt'};
+const ACC_TITLES={dashboard:'Fee Dashboard',classfees:'Class Fee Structure',feestudents:'Student Fees & Invoices',staff:'Staff',salary:'Salary Payments',slip:'Salary Slip Generator',pfrecord:'PF Record',receipt:'Search Admission Receipt',duesentry:'Previous Dues Entry',expenses:'Expenses',summary:'Financial Summary'};
 async function showAccPanel(id){
   document.querySelectorAll('#accountsOverlay .admin-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('#accountsOverlay .sb-item').forEach(a=>a.classList.remove('active'));
@@ -1881,6 +2106,9 @@ async function showAccPanel(id){
   if(id==='salary') await loadStaffDropdowns();
   if(id==='slip') await loadStaffDropdowns();
   if(id==='pfrecord'){ await loadStaffDropdowns(); await loadPFRecords(); }
+  if(id==='duesentry') await duesEntryLoadClasses();
+  if(id==='expenses') await loadExpenses();
+  if(id==='summary') await loadFinancialSummary();
 }
 
 const CLASS_LIST=['Nursery','LKG','UKG','Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'];
@@ -2049,18 +2277,19 @@ async function openFeeStudentPayments(id){
       </div>
       ${fb.annual ? `<div class="mdi full aform" style="margin-top:12px;background:#fdf8f0;border:1px solid #e8d29a;border-radius:8px;padding:14px;">
         <label style="font-size:12px;font-weight:700;color:#92400e;">Annual Fee — Rs. ${fb.annual.toLocaleString('en-IN')}/year &nbsp;|&nbsp; Paid so far: Rs. ${annualPaid.toLocaleString('en-IN')} &nbsp;|&nbsp; ${annualPaid>=fb.annual?'<span style="color:#16a34a;">Fully Paid ✓</span>':('<span style="color:#dc2626;">Rs. '+(fb.annual-annualPaid).toLocaleString('en-IN')+' due</span>')}</label>
+        ${annualPayments.length ? `<table class="tbl" style="margin:8px 0;background:#fff;"><thead><tr><th>Amount</th><th>Mode</th><th>Note</th><th></th></tr></thead><tbody>${annualPayments.map(p=>`<tr><td>Rs. ${p.amount.toLocaleString('en-IN')}</td><td>${esc(p.mode)}</td><td>${esc(p.note||'-')}</td><td><button class="btn-vw" onclick='printFeeInvoice(${JSON.stringify({...p,student_name:s.student_name,applying_class:s.applying_class,month:"Annual Fee"}).replace(/'/g,"&apos;")})'>Invoice</button></td></tr>`).join('')}</tbody></table>` : ''}
         <div class="fg-row" style="flex-wrap:wrap;margin-top:6px;">
           <div class="fg" style="max-width:130px;"><label>Amount</label><input type="number" id="fp-annual-amount" value="${Math.max(0,fb.annual-annualPaid)}"/></div>
           <div class="fg" style="max-width:150px;"><label>Mode</label><select id="fp-annual-mode"><option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option></select></div>
           <div class="fg" style="max-width:180px;"><label>Note</label><input type="text" id="fp-annual-note"/></div>
         </div>
-        <button class="btn-add" style="background:#92400e;" onclick="addAnnualFeePayment('${s.id}','${esc(s.application_number)}','${esc(s.student_name)}')">Record Annual Fee Payment</button>
+        <button class="btn-add" style="background:#92400e;" onclick="addAnnualFeePayment('${s.id}','${esc(s.application_number)}','${esc(s.student_name)}','${esc(s.applying_class||'')}')">Record Annual Fee Payment</button>
       </div>` : ''}`;
     document.getElementById('modal-btns').innerHTML='';
     document.getElementById('modalBg').classList.add('show');
   }catch(e){ hideLoading(); toast('Error: '+e.message); }
 }
-async function addAnnualFeePayment(fsId, appNumber, studentName){
+async function addAnnualFeePayment(fsId, appNumber, studentName, className){
   const amount=document.getElementById('fp-annual-amount').value;
   const mode=document.getElementById('fp-annual-mode').value;
   const note=document.getElementById('fp-annual-note').value;
@@ -2068,7 +2297,8 @@ async function addAnnualFeePayment(fsId, appNumber, studentName){
   showLoading('Saving...');
   try{
     await adm2('acc_add_fee_payment',{application_number:appNumber, student_name:studentName, amount, mode, note, fee_type:'annual'});
-    hideLoading(); toast('Annual fee payment recorded!');
+    hideLoading(); toast('Annual fee payment recorded! Opening printable invoice for the student...');
+    printFeeInvoice({application_number:appNumber, student_name:studentName, applying_class:className, month:'Annual Fee', amount, mode, note, paid_on:new Date().toISOString()});
     openFeeStudentPayments(fsId);
     loadFeeDashboard();
   }catch(e){ hideLoading(); toast('Error: '+e.message); }
@@ -2081,8 +2311,10 @@ async function addFeePayment(fsId, appNumber, studentName){
   if(!month||!amount){ toast('Month and amount are required.'); return; }
   showLoading('Saving...');
   try{
+    const s=_feeStudents.find(x=>x.id===fsId);
     await adm2('acc_add_fee_payment',{application_number:appNumber, student_name:studentName, month, amount, mode, note});
-    hideLoading(); toast('Payment recorded!');
+    hideLoading(); toast('Payment recorded! Opening printable invoice for the student...');
+    printFeeInvoice({application_number:appNumber, student_name:studentName, applying_class:s&&s.applying_class, month, amount, mode, note, paid_on:new Date().toISOString()});
     openFeeStudentPayments(fsId);
     loadFeeDashboard();
   }catch(e){ hideLoading(); toast('Error: '+e.message); }
@@ -2266,6 +2498,164 @@ function printSlipFromReceipt(){
   printSlip(a.id);
 }
 
+/* ═══════════════ PREVIOUS DUES ENTRY / LEGACY STUDENT ═══════════════ */
+let _duesStudentsCache=[];
+async function duesEntryLoadClasses(){
+  const yearSel=document.getElementById('dl-year');
+  if(yearSel && !yearSel.options.length){
+    const curYear=new Date().getFullYear();
+    for(let y=curYear+1;y>=curYear-8;y--){ const o=document.createElement('option'); o.value=y; o.textContent=y+'-'+String(y+1).slice(2); yearSel.appendChild(o); }
+  }
+  await loadDuesList();
+}
+async function addLegacyStudent(){
+  const student_name=document.getElementById('dl-name').value.trim();
+  const father_name=document.getElementById('dl-father').value.trim();
+  const dob=document.getElementById('dl-dob').value;
+  const applying_class=document.getElementById('dl-class').value;
+  const section=document.getElementById('dl-section').value.trim();
+  const admission_year=document.getElementById('dl-year').value;
+  if(!student_name||!applying_class||!admission_year){ toast('Name, Class and Admission Year are required.'); return; }
+  showLoading('Adding student...');
+  try{
+    const r=await adm2('acc_add_legacy_student',{student_name,father_name,dob,applying_class,section,admission_year});
+    hideLoading();
+    toast('Student added! Application No: '+r.application_number+' — they now appear everywhere (Fee Students, ID Cards, etc).');
+    document.getElementById('dl-name').value='';document.getElementById('dl-father').value='';document.getElementById('dl-dob').value='';document.getElementById('dl-section').value='';
+    if(document.getElementById('du-class').value===applying_class) duesEntryLoadStudents();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function duesEntryLoadStudents(){
+  const cls=document.getElementById('du-class').value;
+  const sel=document.getElementById('du-student');
+  if(!cls){ sel.innerHTML='<option value="">Select Class first...</option>'; return; }
+  sel.innerHTML='<option value="">Loading...</option>';
+  try{
+    const r=await accGet('acc_list_fee_students',{class_name:cls});
+    _duesStudentsCache=r.data||[];
+    if(!_duesStudentsCache.length){ sel.innerHTML='<option value="">No students in this class yet — add one above</option>'; return; }
+    sel.innerHTML='<option value="">Select Student</option>'+_duesStudentsCache.map(s=>`<option value="${esc(s.application_number)}">${esc(s.student_name)} (${esc(s.application_number)})</option>`).join('');
+  }catch(e){ sel.innerHTML='<option value="">Error loading students</option>'; }
+}
+async function saveDueEntry(){
+  const appNo=document.getElementById('du-student').value;
+  const cls=document.getElementById('du-class').value;
+  const month=document.getElementById('du-month').value;
+  const item=document.getElementById('du-item').value.trim();
+  const amount_due=document.getElementById('du-due').value;
+  const amount_paid=document.getElementById('du-paid').value;
+  const note=document.getElementById('du-note').value.trim();
+  if(!appNo||!month||!item){ toast('Select a student, month and fee item.'); return; }
+  const s=_duesStudentsCache.find(x=>x.application_number===appNo);
+  showLoading('Saving...');
+  try{
+    await adm2('acc_add_previous_due',{application_number:appNo, student_name:s?s.student_name:'', class_name:cls, month, item, amount_due, amount_paid, note});
+    hideLoading(); toast('Due entry saved!');
+    document.getElementById('du-item').value='';document.getElementById('du-due').value='';document.getElementById('du-paid').value='0';document.getElementById('du-note').value='';
+    loadDuesList();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function loadDuesList(){
+  const body=document.getElementById('dues-body');
+  try{
+    const r=await accGet('acc_list_previous_dues',{});
+    const list=r.data||[];
+    if(!list.length){ body.innerHTML='<tr><td colspan="8" class="no-data">No previous dues recorded yet.</td></tr>'; return; }
+    body.innerHTML=list.map(d=>{
+      const bal=Math.max(0,(d.amount_due||0)-(d.amount_paid||0));
+      return `<tr>
+        <td>${esc(d.student_name)}</td><td>${esc(d.class_name||'-')}</td><td>${esc(d.month)}</td><td>${esc(d.item)}</td>
+        <td>Rs. ${(d.amount_due||0).toLocaleString('en-IN')}</td><td>Rs. ${(d.amount_paid||0).toLocaleString('en-IN')}</td>
+        <td style="color:${bal>0?'#dc2626':'#16a34a'};font-weight:700;">Rs. ${bal.toLocaleString('en-IN')}</td>
+        <td><button class="btn-del" onclick="deleteDueEntry('${d.id}')">Delete</button></td>
+      </tr>`;
+    }).join('');
+  }catch(e){ body.innerHTML='<tr><td colspan="8" class="no-data">Error loading dues.</td></tr>'; }
+}
+async function deleteDueEntry(id){
+  if(!confirm('Delete this due entry?')) return;
+  try{ await adm2('acc_delete_previous_due',{id}); toast('Deleted.'); loadDuesList(); }catch(e){ toast('Error: '+e.message); }
+}
+
+/* ═══════════════ EXPENSES ═══════════════ */
+let _expensesCache=[];
+async function addExpense(){
+  const date=document.getElementById('ex-date').value;
+  const category=document.getElementById('ex-category').value;
+  const amount=document.getElementById('ex-amount').value;
+  const paid_to=document.getElementById('ex-paidto').value.trim();
+  const note=document.getElementById('ex-note').value.trim();
+  if(!date||!amount){ toast('Date and amount are required.'); return; }
+  showLoading('Saving...');
+  try{
+    await adm2('acc_add_expense',{date,category,amount,paid_to,note});
+    hideLoading(); toast('Expense recorded!');
+    document.getElementById('ex-amount').value='';document.getElementById('ex-paidto').value='';document.getElementById('ex-note').value='';
+    loadExpenses();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function loadExpenses(){
+  const body=document.getElementById('expenses-body');
+  try{
+    const r=await accGet('acc_list_expenses',{});
+    _expensesCache=r.data||[];
+    if(!_expensesCache.length){ body.innerHTML='<tr><td colspan="6" class="no-data">No expenses recorded yet.</td></tr>'; return; }
+    body.innerHTML=_expensesCache.map(e=>`<tr>
+      <td>${new Date(e.date).toLocaleDateString('en-IN')}</td><td>${esc(e.category)}</td>
+      <td>Rs. ${(e.amount||0).toLocaleString('en-IN')}</td><td>${esc(e.paid_to||'-')}</td><td>${esc(e.note||'-')}</td>
+      <td><button class="btn-del" onclick="deleteExpense('${e.id}')">Delete</button></td>
+    </tr>`).join('');
+  }catch(err){ body.innerHTML='<tr><td colspan="6" class="no-data">Error loading expenses.</td></tr>'; }
+}
+async function deleteExpense(id){
+  if(!confirm('Delete this expense?')) return;
+  try{ await adm2('acc_delete_expense',{id}); toast('Deleted.'); loadExpenses(); }catch(e){ toast('Error: '+e.message); }
+}
+function exportExpensesCSV(){
+  if(!_expensesCache.length){ toast('No expenses to export.'); return; }
+  let csv='Date,Category,Amount,Paid To,Note\n';
+  _expensesCache.forEach(e=>{ csv+=`${e.date},${e.category},${e.amount},"${(e.paid_to||'').replace(/"/g,'""')}","${(e.note||'').replace(/"/g,'""')}"\n`; });
+  downloadCSV(csv,'expenses.csv');
+}
+function downloadCSV(csv, filename){
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+}
+
+/* ═══════════════ FINANCIAL SUMMARY ═══════════════ */
+let _fsRowsCache=[];
+async function loadFinancialSummary(){
+  const period=document.getElementById('fs-period').value;
+  const titleMap={daily:'Day-wise',monthly:'Month-wise',quarterly:'Quarter-wise',yearly:'Year-wise'};
+  document.getElementById('fs-table-title').textContent=titleMap[period]+' Breakdown';
+  const body=document.getElementById('fs-body');
+  body.innerHTML='<tr><td colspan="6" class="no-data">Loading...</td></tr>';
+  try{
+    const r=await accGet('acc_financial_summary',{period});
+    const t=r.data.totals; _fsRowsCache=r.data.rows||[];
+    document.getElementById('fs-fee-received').textContent='Rs. '+t.fee_received_all_time.toLocaleString('en-IN');
+    document.getElementById('fs-dues-outstanding').textContent='Rs. '+t.dues_outstanding.toLocaleString('en-IN');
+    document.getElementById('fs-salary-paid').textContent='Rs. '+t.salary_paid_all_time.toLocaleString('en-IN');
+    document.getElementById('fs-expenses').textContent='Rs. '+t.expenses_all_time.toLocaleString('en-IN');
+    document.getElementById('fs-net').textContent='Rs. '+t.net_all_time.toLocaleString('en-IN');
+    if(!_fsRowsCache.length){ body.innerHTML='<tr><td colspan="6" class="no-data">No financial activity recorded yet.</td></tr>'; return; }
+    body.innerHTML=_fsRowsCache.map(row=>`<tr>
+      <td>${esc(row.period)}</td>
+      <td>Rs. ${row.fee_received.toLocaleString('en-IN')}</td>
+      <td>Rs. ${row.dues_received.toLocaleString('en-IN')}</td>
+      <td>Rs. ${row.salary_paid.toLocaleString('en-IN')}</td>
+      <td>Rs. ${row.expenses.toLocaleString('en-IN')}</td>
+      <td style="color:${row.net>=0?'#16a34a':'#dc2626'};font-weight:700;">Rs. ${row.net.toLocaleString('en-IN')}</td>
+    </tr>`).join('');
+  }catch(e){ body.innerHTML='<tr><td colspan="6" class="no-data">Error loading summary.</td></tr>'; }
+}
+function exportSummaryCSV(){
+  if(!_fsRowsCache.length){ toast('No data to export.'); return; }
+  let csv='Period,Fee Received,Dues Collected,Salary Paid,Expenses,Net\n';
+  _fsRowsCache.forEach(r=>{ csv+=`${r.period},${r.fee_received},${r.dues_received},${r.salary_paid},${r.expenses},${r.net}\n`; });
+  downloadCSV(csv,'financial-summary.csv');
+}
+
 // ── Salary Slip (single month or range e.g. 6/12 months) ──
 async function generateSalarySlip(){
   const appNo=document.getElementById('slip-staff').value;
@@ -2332,6 +2722,10 @@ async function showPanel(id){
   if(id==='duty')await loadDutyRoster();
   if(id==='staffid')await loadStaffIdList();
   if(id==='studentid')await loadStudentIdList();
+  if(id==='tc'){_certSearchResults=[];_certSelected=null;renderCertSearchResults('tc');}
+  if(id==='character'){_certSearchResults=[];_certSelected=null;renderCertSearchResults('character');}
+  if(id==='experience'){_certSearchResults=[];_certSelected=null;renderCertSearchResults('experience');}
+  if(id==='chatbot')await loadChatbotFaqsAdmin();
   if(id==='sitesettings')await loadSiteSettings();
 }
 let _admOpen=false;
@@ -2807,11 +3201,15 @@ function printAdmTable(){
 }
 async function renderPublicNotices(){
   const grid=document.getElementById('pub-notices-grid'),ticker=document.getElementById('pub-ticker');
+  const catIcon={Announcement:'&#128227;',Holiday:'&#127796;',Exam:'&#128221;',Event:'&#127881;',Admission:'&#127891;'};
   try{
     const r=await api('get_notices');const data=r.data||[];
     if(!data.length){grid.innerHTML='<div class="notices-empty">No notices yet.</div>';ticker.style.display='none';return;}
     ticker.style.display='flex';document.getElementById('pub-ticker-text').textContent=data[0].title+(data[0].content?' - '+data[0].content:'');
-    grid.innerHTML=data.slice(0,6).map(n=>'<div class="npcard"><div class="npcard-top"><span class="ncat ncat-'+n.category+'">'+n.category+'</span><span class="ncat-date">'+new Date(n.created_at).toLocaleDateString('en-IN')+'</span></div><h4>'+esc(n.title)+'</h4><p>'+esc(n.content||'Visit school for details.')+'</p></div>').join('');
+    grid.innerHTML=data.slice(0,6).map(n=>{
+      const isNew = (Date.now()-new Date(n.created_at).getTime()) < 7*24*60*60*1000;
+      return '<div class="npcard"><div class="npcard-top"><span class="ncat ncat-'+n.category+'">'+(catIcon[n.category]||'')+' '+n.category+'</span>'+(isNew?'<span style="background:var(--pub-accent);color:var(--pub-primary);font-size:9.5px;font-weight:800;padding:2px 8px;border-radius:100px;">NEW</span>':'')+'</div><h4>'+esc(n.title)+'</h4><p>'+esc(n.content||'Visit school for details.')+'</p><div class="ncat-date" style="margin-top:10px;">&#128197; '+new Date(n.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})+'</div></div>';
+    }).join('');
   }catch{grid.innerHTML='<div class="notices-empty">Unable to load notices.</div>';ticker.style.display='none';}
 }
 async function submitEnquiry(){
@@ -2955,6 +3353,7 @@ function renderNoticesAdmin() {
       <td>${n.category}</td>
       <td>${esc(n.content || '-')}</td>
       <td>
+        <button class="btn-vw" onclick='openNoticeEditor(${JSON.stringify(n).replace(/'/g,"&apos;")})'>Edit</button>
         <button class="btn-del" onclick="delNotice('${n.id}')">
           Delete
         </button>
@@ -2963,6 +3362,32 @@ function renderNoticesAdmin() {
   `).join('');
 }
 async function addNotice(){const title=document.getElementById('n-title').value.trim(),cat=document.getElementById('n-cat').value,content=document.getElementById('n-content').value.trim();if(!title){toast('Enter notice title!');return;}showLoading('Publishing...');try{const r=await api('add_notice','POST',{title:title,category:cat,content:content});_notices.unshift(r.data);document.getElementById('n-title').value='';document.getElementById('n-content').value='';renderNoticesAdmin();updateDash();renderPublicNotices();toast('Notice live on website!');}catch(e){toast('Error:'+e.message);}hideLoading();}
+function openNoticeEditor(n){
+  document.getElementById('modal-title').textContent='Edit Notice';
+  document.getElementById('modal-body').innerHTML=`
+    <div class="mdi full"><label>Title</label><input type="text" id="en-title" value="${esc(n.title)}"/></div>
+    <div class="mdi full"><label>Category</label>
+      <select id="en-cat">
+        ${['Announcement','Holiday','Exam','Event','Admission'].map(c=>`<option ${n.category===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
+    <div class="mdi full"><label>Content</label><textarea id="en-content" rows="4">${esc(n.content||'')}</textarea></div>
+  `;
+  document.getElementById('modal-btns').innerHTML=`<button class="btn-add" onclick="saveNoticeEdit('${n.id}')">Save Changes</button>`;
+  document.getElementById('modalBg').classList.add('show');
+}
+async function saveNoticeEdit(id){
+  const title=document.getElementById('en-title').value.trim();
+  const category=document.getElementById('en-cat').value;
+  const content=document.getElementById('en-content').value.trim();
+  if(!title){ toast('Enter notice title!'); return; }
+  showLoading('Saving...');
+  try{
+    const r=await api('update_notice','POST',{id,title,category,content});
+    const idx=_notices.findIndex(x=>x.id===id); if(idx>-1) _notices[idx]=r.data;
+    hideLoading(); closeModal(); renderNoticesAdmin(); renderPublicNotices(); toast('Notice updated!');
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
 async function delNotice(id){if(!confirm('Delete notice?'))return;try{await api('delete_notice','POST',{id:id});_notices=_notices.filter(x=>x.id!=id);renderNoticesAdmin();updateDash();renderPublicNotices();toast('Deleted.');}catch(e){toast('Error:'+e.message);}}
 function exportNoticesPDF(){const rows=_notices.map((n,i)=>'<tr><td>'+(i+1)+'</td><td>'+new Date(n.created_at).toLocaleDateString('en-IN')+'</td><td>'+esc(n.title)+'</td><td>'+n.category+'</td><td>'+esc(n.content||'')+'</td></tr>').join('');const w=window.open('','_blank');w.document.write('<html><head><title>Notices</title><style>body{font-family:Arial;padding:20px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#0a1628;color:#fff;padding:9px}td{padding:8px;border:1px solid #ddd}</style></head><body><h2>ICA Notices</h2><table><thead><tr><th>#</th><th>Date</th><th>Title</th><th>Category</th><th>Content</th></tr></thead><tbody>'+rows+'</tbody></table></body></html>');w.document.close();setTimeout(()=>w.print(),400);}
 let _gallery=[], _galActiveFilter='All', _galFileData='', _testimonials=[];
@@ -3418,6 +3843,18 @@ async function uploadSettingAsset(inputEl, settingKey, previewImgId){
     hideLoading();
   };
   reader.readAsDataURL(file);
+}
+async function removeSettingAsset(settingKey, previewImgId, fileInputId){
+  if(!confirm('Remove this image? The site will fall back to its default placeholder until you upload a new one.')) return;
+  showLoading('Removing...');
+  try{
+    await api('update_setting','POST',{key:settingKey, value:''});
+    _siteSettingsCache[settingKey] = '';
+    setAssetPreview(previewImgId, '');
+    const fi = document.getElementById(fileInputId); if(fi) fi.value = '';
+    toast('Image removed.');
+  }catch(e){ toast('Error: '+e.message); }
+  hideLoading();
 }
 // ── Leave Policy ──
 let _leavePolicy = [];
@@ -4556,6 +4993,240 @@ function printIdCards(cardsHtml, title){
   w.document.close(); w.focus();
 }
 
+/* ═══════════════ CERTIFICATES: Transfer / Character / Experience ═══════════════ */
+let _certSearchResults=[]; let _certSelected={};
+function renderCertSearchResults(panel){
+  const el=document.getElementById('cert-results-'+panel); if(el) el.innerHTML='';
+  const formEl=document.getElementById('cert-form-'+panel); if(formEl) formEl.innerHTML='';
+}
+async function searchStudentsForCert(panel){
+  const q=document.getElementById('cert-search-'+panel).value.trim();
+  const resEl=document.getElementById('cert-results-'+panel);
+  if(q.length<2){ resEl.innerHTML=''; return; }
+  try{
+    const headers={}; if(_adminToken) headers['x-admin-token']=_adminToken;
+    const resp=await fetch(ADM_API+'?action=search_students_for_cert&q='+encodeURIComponent(q),{headers});
+    const d=await resp.json(); if(!d.success) throw new Error(d.error);
+    const list=d.data||[];
+    if(!list.length){ resEl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px;">No matching students found.</div>'; return; }
+    resEl.innerHTML=list.map(s=>{
+      const photo=s.photo_url?`<img src="${esc(s.photo_url)}"/>`:`<div style="width:34px;height:34px;border-radius:50%;background:#eee;"></div>`;
+      return `<div class="cert-result-item" onclick='selectCertStudent("${panel}",${JSON.stringify(s).replace(/'/g,"&apos;")})'>${photo}<div><div class="crname">${esc(s.student_name)}</div><div class="crsub">Student ID: ${esc(s.student_id||'-')} &middot; App No: ${esc(s.application_number)} &middot; Class ${esc(s.applying_class||'-')}${s.section?(' - '+esc(s.section)):''}</div></div></div>`;
+    }).join('');
+  }catch(e){ resEl.innerHTML='<div style="font-size:12px;color:#dc2626;padding:8px;">Search error: '+esc(e.message)+'</div>'; }
+}
+async function searchStaffForCert(){
+  const q=document.getElementById('cert-search-experience').value.trim();
+  const resEl=document.getElementById('cert-results-experience');
+  if(q.length<2){ resEl.innerHTML=''; return; }
+  try{
+    const headers={}; if(_adminToken) headers['x-admin-token']=_adminToken;
+    const resp=await fetch(ADM_API+'?action=search_staff_for_cert&q='+encodeURIComponent(q),{headers});
+    const d=await resp.json(); if(!d.success) throw new Error(d.error);
+    const list=d.data||[];
+    if(!list.length){ resEl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px;">No matching staff found.</div>'; return; }
+    resEl.innerHTML=list.map(s=>{
+      const photo=s.photo_url?`<img src="${esc(s.photo_url)}"/>`:`<div style="width:34px;height:34px;border-radius:50%;background:#eee;"></div>`;
+      return `<div class="cert-result-item" onclick='selectCertStudent("experience",${JSON.stringify(s).replace(/'/g,"&apos;")})'>${photo}<div><div class="crname">${esc(s.name)}</div><div class="crsub">Staff ID: ${esc(s.staff_id||'-')} &middot; App No: ${esc(s.application_number)} &middot; ${esc(s.position||'-')}</div></div></div>`;
+    }).join('');
+  }catch(e){ resEl.innerHTML='<div style="font-size:12px;color:#dc2626;padding:8px;">Search error: '+esc(e.message)+'</div>'; }
+}
+function selectCertStudent(panel, s){
+  _certSelected[panel]=s;
+  document.getElementById('cert-results-'+panel).innerHTML='';
+  document.getElementById('cert-search-'+panel).value = s.student_name || s.name;
+  renderCertForm(panel);
+}
+function renderCertForm(panel){
+  const s=_certSelected[panel]; const el=document.getElementById('cert-form-'+panel); if(!s||!el) return;
+  const photo = s.photo_url ? `<img src="${esc(s.photo_url)}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;"/>` : '';
+  if(panel==='tc'){
+    el.innerHTML = `
+      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:8px;">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;">${photo}<div><b>${esc(s.student_name)}</b><div style="font-size:12px;color:var(--muted);">App No: ${esc(s.application_number)} &middot; Class ${esc(s.applying_class||'-')}${s.section?(' - '+esc(s.section)):''} &middot; Father: ${esc(s.father_name||'-')}</div></div></div>
+        <div class="fg-row" style="flex-wrap:wrap;">
+          <div class="fg" style="max-width:180px;"><label>Date of Admission</label><input type="date" id="tc-admission-date"/></div>
+          <div class="fg" style="max-width:180px;"><label>Date of Leaving</label><input type="date" id="tc-leaving-date" value="${new Date().toISOString().slice(0,10)}"/></div>
+          <div class="fg" style="max-width:220px;"><label>Reason for Leaving</label><input type="text" id="tc-reason" placeholder="e.g. Parent's Transfer"/></div>
+        </div>
+        <div class="fg-row" style="flex-wrap:wrap;">
+          <div class="fg" style="max-width:200px;"><label>Conduct &amp; Character</label><select id="tc-conduct"><option>Excellent</option><option selected>Good</option><option>Satisfactory</option></select></div>
+          <div class="fg" style="max-width:200px;"><label>Qualified for Promotion To</label><input type="text" id="tc-promotion" placeholder="e.g. Class 6"/></div>
+          <div class="fg" style="max-width:200px;"><label>School Dues Cleared</label><select id="tc-dues"><option>Yes</option><option>No</option></select></div>
+        </div>
+        <div class="fg"><label>Remarks</label><input type="text" id="tc-remarks"/></div>
+        <div class="fg-row" style="align-items:center;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;"><input type="checkbox" id="tc-accountant-sign" style="width:auto;"/> Include Accountant signature line</label>
+        </div>
+        <button class="btn-add" onclick="generateCert('tc')">Generate &amp; Print Transfer Certificate</button>
+      </div>`;
+  } else if(panel==='character'){
+    el.innerHTML = `
+      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:8px;">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;">${photo}<div><b>${esc(s.student_name)}</b><div style="font-size:12px;color:var(--muted);">App No: ${esc(s.application_number)} &middot; Class ${esc(s.applying_class||'-')}${s.section?(' - '+esc(s.section)):''} &middot; Father: ${esc(s.father_name||'-')}</div></div></div>
+        <div class="fg-row" style="flex-wrap:wrap;">
+          <div class="fg" style="max-width:180px;"><label>Studied From</label><input type="text" id="cc-from" placeholder="e.g. Class 1 / 2022"/></div>
+          <div class="fg" style="max-width:180px;"><label>Studied To</label><input type="text" id="cc-to" placeholder="e.g. Class 5 / 2026"/></div>
+          <div class="fg" style="max-width:220px;"><label>Purpose</label><input type="text" id="cc-purpose" placeholder="e.g. Higher Studies"/></div>
+        </div>
+        <div class="fg"><label>Character Remark</label><input type="text" id="cc-remark" value="Good moral character and conduct."/></div>
+        <div class="fg-row" style="align-items:center;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;"><input type="checkbox" id="cc-accountant-sign" style="width:auto;"/> Include Accountant signature line</label>
+        </div>
+        <button class="btn-add" onclick="generateCert('character')">Generate &amp; Print Character Certificate</button>
+      </div>`;
+  } else if(panel==='experience'){
+    el.innerHTML = `
+      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:8px;">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;">${photo}<div><b>${esc(s.name)}</b><div style="font-size:12px;color:var(--muted);">App No: ${esc(s.application_number)} &middot; ${esc(s.position||'-')} &middot; ${esc(s.department||'-')}</div></div></div>
+        <div class="fg-row" style="flex-wrap:wrap;">
+          <div class="fg" style="max-width:180px;"><label>Date of Joining</label><input type="date" id="exp-joining-date"/></div>
+          <div class="fg" style="max-width:180px;"><label>Date of Leaving</label><input type="date" id="exp-leaving-date" value="${new Date().toISOString().slice(0,10)}"/></div>
+          <div class="fg" style="max-width:220px;"><label>Designation Held</label><input type="text" id="exp-designation" value="${esc(s.position||'')}"/></div>
+        </div>
+        <div class="fg"><label>Remarks / Nature of Work</label><input type="text" id="exp-remarks" placeholder="e.g. Sincere, hardworking and dedicated to duty."/></div>
+        <div class="fg-row" style="align-items:center;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;"><input type="checkbox" id="exp-accountant-sign" style="width:auto;"/> Include Accountant signature line</label>
+        </div>
+        <button class="btn-add" onclick="generateCert('experience')">Generate &amp; Print Experience Letter</button>
+      </div>`;
+  }
+}
+async function generateCert(panel){
+  const s=_certSelected[panel]; if(!s){ toast('Select a student/staff first.'); return; }
+  showLoading('Generating...');
+  try{
+    let payload, action;
+    if(panel==='tc'){
+      action='generate_certificate';
+      payload={type:'tc', student_fee_id:s.id, admission_date:document.getElementById('tc-admission-date').value, leaving_date:document.getElementById('tc-leaving-date').value, reason:document.getElementById('tc-reason').value, conduct:document.getElementById('tc-conduct').value, promotion:document.getElementById('tc-promotion').value, dues:document.getElementById('tc-dues').value, remarks:document.getElementById('tc-remarks').value, accountant_sign:document.getElementById('tc-accountant-sign').checked};
+    } else if(panel==='character'){
+      action='generate_certificate';
+      payload={type:'character', student_fee_id:s.id, studied_from:document.getElementById('cc-from').value, studied_to:document.getElementById('cc-to').value, purpose:document.getElementById('cc-purpose').value, remark:document.getElementById('cc-remark').value, accountant_sign:document.getElementById('cc-accountant-sign').checked};
+    } else {
+      action='generate_experience_letter';
+      payload={staff_fee_id:s.id, joining_date:document.getElementById('exp-joining-date').value, leaving_date:document.getElementById('exp-leaving-date').value, designation_held:document.getElementById('exp-designation').value, remarks:document.getElementById('exp-remarks').value, accountant_sign:document.getElementById('exp-accountant-sign').checked};
+    }
+    const r = await adm(action,'POST',payload);
+    hideLoading();
+    const cfg = await getIdCardBrandSettings();
+    if(panel==='tc') printCertificateWindow(buildTcHtml(r.data,cfg), 'Transfer Certificate — '+r.data.student_name);
+    else if(panel==='character') printCertificateWindow(buildCharacterHtml(r.data,cfg), 'Character Certificate — '+r.data.student_name);
+    else printCertificateWindow(buildExperienceHtml(r.data,cfg), 'Experience Letter — '+r.data.student_name);
+    toast('Certificate generated!');
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+function certQrUrl(id){
+  const verifyUrl = location.origin + '/verify-id?type=certificate&id=' + id;
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&margin=6&data=' + encodeURIComponent(verifyUrl);
+}
+function certLetterheadHtml(cfg){
+  return `<div class="cf-head">
+    ${cfg.school_stamp_url?'':''}
+    <h1>IDEAL CHILDREN ACADEMY</h1>
+    <p>Batrauliya, Paharpur, East Champaran, Bihar - 845458</p>
+  </div>`;
+}
+function certSignRow(cfg, includeAccountant){
+  return `<div class="cf-sign-row">
+    <div class="cf-sign-col">
+      ${cfg.sig_principal_url?`<img class="cf-sign-img" src="${esc(cfg.sig_principal_url)}"/>`:'<div class="cf-sign-blank"></div>'}
+      <div class="cf-sign-label">Principal</div>
+    </div>
+    ${includeAccountant?`<div class="cf-sign-col"><div class="cf-sign-blank"></div><div class="cf-sign-label">Accountant</div></div>`:''}
+    ${cfg.school_stamp_url?`<div class="cf-seal-col"><img class="cf-seal" src="${esc(cfg.school_stamp_url)}"/></div>`:''}
+  </div>`;
+}
+function buildTcHtml(c, cfg){
+  const photo = c.photo_url ? `<img class="cf-photo" src="${esc(c.photo_url)}"/>` : '';
+  const qr = c.id ? `<img class="cf-qr" src="${certQrUrl(c.id)}"/>` : '';
+  return `${certLetterheadHtml(cfg)}
+  <div class="cf-topline"><span>TC No: <b>${esc(c.cert_no)}</b></span><span>Date: <b>${new Date().toLocaleDateString('en-IN')}</b></span></div>
+  ${photo}
+  <h2 class="cf-title">TRANSFER CERTIFICATE</h2>
+  <div class="cf-body">
+    <p>This is to certify that <b>${esc(c.student_name)}</b>, son/daughter of <b>${esc(c.father_name||'-')}</b>, Application No. <b>${esc(c.application_number)}</b>, was a bonafide student of this school studying in Class <b>${esc(c.applying_class||'-')}</b>${c.section?(' Section '+esc(c.section)):''}.</p>
+    <table class="cf-tbl">
+      <tr><td>Date of Admission</td><td>${c.admission_date?new Date(c.admission_date).toLocaleDateString('en-IN'):'-'}</td></tr>
+      <tr><td>Date of Leaving</td><td>${c.leaving_date?new Date(c.leaving_date).toLocaleDateString('en-IN'):'-'}</td></tr>
+      <tr><td>Reason for Leaving</td><td>${esc(c.reason||'-')}</td></tr>
+      <tr><td>Conduct &amp; Character</td><td>${esc(c.conduct||'-')}</td></tr>
+      <tr><td>Qualified for Promotion To</td><td>${esc(c.promotion||'-')}</td></tr>
+      <tr><td>School Dues Cleared</td><td>${esc(c.dues||'-')}</td></tr>
+    </table>
+    ${c.remarks?`<p><b>Remarks:</b> ${esc(c.remarks)}</p>`:''}
+  </div>
+  ${certSignRow(cfg, c.accountant_sign)}
+  ${qr?`<div class="cf-qr-wrap">${qr}<div class="cf-qr-label">Scan to verify authenticity</div></div>`:''}
+  `;
+}
+function buildCharacterHtml(c, cfg){
+  const photo = c.photo_url ? `<img class="cf-photo" src="${esc(c.photo_url)}"/>` : '';
+  const qr = c.id ? `<img class="cf-qr" src="${certQrUrl(c.id)}"/>` : '';
+  return `${certLetterheadHtml(cfg)}
+  <div class="cf-topline"><span>Certificate No: <b>${esc(c.cert_no)}</b></span><span>Date: <b>${new Date().toLocaleDateString('en-IN')}</b></span></div>
+  ${photo}
+  <h2 class="cf-title">CHARACTER CERTIFICATE</h2>
+  <div class="cf-body">
+    <p>This is to certify that <b>${esc(c.student_name)}</b>, son/daughter of <b>${esc(c.father_name||'-')}</b>, Application No. <b>${esc(c.application_number)}</b>, was a student of this school${c.studied_from||c.studied_to?(' from <b>'+esc(c.studied_from||'-')+'</b> to <b>'+esc(c.studied_to||'-')+'</b>'):''}.</p>
+    <p>${esc(c.remark||'Good moral character and conduct.')}</p>
+    ${c.purpose?`<p>This certificate is issued for the purpose of: <b>${esc(c.purpose)}</b>.</p>`:''}
+  </div>
+  ${certSignRow(cfg, c.accountant_sign)}
+  ${qr?`<div class="cf-qr-wrap">${qr}<div class="cf-qr-label">Scan to verify authenticity</div></div>`:''}
+  `;
+}
+function buildExperienceHtml(c, cfg){
+  const photo = c.photo_url ? `<img class="cf-photo" src="${esc(c.photo_url)}"/>` : '';
+  const qr = c.id ? `<img class="cf-qr" src="${certQrUrl(c.id)}"/>` : '';
+  return `${certLetterheadHtml(cfg)}
+  <div class="cf-topline"><span>Ref No: <b>${esc(c.ref_no)}</b></span><span>Date: <b>${new Date().toLocaleDateString('en-IN')}</b></span></div>
+  ${photo}
+  <h2 class="cf-title">EXPERIENCE LETTER</h2>
+  <div class="cf-body">
+    <p>This is to certify that <b>${esc(c.student_name)}</b>, Application No. <b>${esc(c.application_number)}</b>, worked at Ideal Children Academy as <b>${esc(c.designation_held||c.position||'-')}</b>${c.department?(', '+esc(c.department)+' Department'):''}.</p>
+    <table class="cf-tbl">
+      <tr><td>Date of Joining</td><td>${c.joining_date?new Date(c.joining_date).toLocaleDateString('en-IN'):'-'}</td></tr>
+      <tr><td>Date of Leaving</td><td>${c.leaving_date?new Date(c.leaving_date).toLocaleDateString('en-IN'):'-'}</td></tr>
+    </table>
+    <p>${esc(c.remarks||'During the tenure, the conduct and performance were found to be satisfactory.')}</p>
+    <p>We wish them success in all future endeavours.</p>
+  </div>
+  ${certSignRow(cfg, c.accountant_sign)}
+  ${qr?`<div class="cf-qr-wrap">${qr}<div class="cf-qr-label">Scan to verify authenticity</div></div>`:''}
+  `;
+}
+function printCertificateWindow(bodyHtml, title){
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>${esc(title)}</title><style>
+    *{box-sizing:border-box;}
+    body{font-family:Georgia,'Times New Roman',serif;padding:50px 60px;max-width:800px;margin:auto;color:#1a1a1a;position:relative;}
+    .cf-head{text-align:center;border-bottom:3px double #0a1628;padding-bottom:14px;margin-bottom:18px;}
+    .cf-head h1{margin:0;font-size:24px;color:#0a1628;letter-spacing:1px;}
+    .cf-head p{margin:4px 0 0;font-size:12px;color:#555;}
+    .cf-topline{display:flex;justify-content:space-between;font-size:13px;margin-bottom:20px;}
+    .cf-photo{width:90px;height:90px;object-fit:cover;border-radius:6px;border:2px solid #d4a62a;position:absolute;top:110px;right:60px;}
+    .cf-title{text-align:center;text-decoration:underline;letter-spacing:2px;color:#0a1628;font-size:19px;margin-bottom:22px;}
+    .cf-body p{font-size:14.5px;line-height:1.9;text-align:justify;margin-bottom:12px;}
+    .cf-tbl{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;}
+    .cf-tbl td{padding:7px 4px;border-bottom:1px dashed #ccc;}
+    .cf-tbl td:first-child{color:#666;width:44%;}
+    .cf-sign-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:70px;gap:20px;}
+    .cf-sign-col{text-align:center;min-width:110px;}
+    .cf-sign-img{max-width:100px;max-height:40px;object-fit:contain;}
+    .cf-sign-blank{height:40px;}
+    .cf-sign-label{border-top:1px solid #333;margin-top:4px;padding-top:4px;font-size:11.5px;color:#444;}
+    .cf-seal-col{text-align:center;}
+    .cf-seal{width:70px;height:70px;object-fit:contain;opacity:.9;}
+    .cf-qr-wrap{position:absolute;bottom:50px;left:60px;text-align:center;}
+    .cf-qr{width:78px;height:78px;}
+    .cf-qr-label{font-size:9px;color:#888;margin-top:2px;}
+    @media print{ .no-print{display:none!important;} }
+  </style></head><body>${bodyHtml}
+  <div class="no-print" style="text-align:center;margin-top:24px;"><button onclick="window.print()" style="padding:10px 24px;background:#0a1628;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print</button></div>
+  </body></html>`);
+  w.document.close(); w.focus();
+}
 
 async function loadResults(){
   document.getElementById('results-body').innerHTML='<tr><td colspan="7" class="no-data">Loading...</td></tr>';
@@ -5592,11 +6263,90 @@ window.addEventListener('scroll',()=>{
   secs.forEach(s=>{const el=document.getElementById(s);if(el&&el.offsetTop<=y)active=s;});
   document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+active));
   const navEl=document.getElementById('mainNav'); if(navEl) navEl.classList.toggle('scrolled', window.scrollY>20);
+  const topbarEl=document.getElementById('topbar'); if(topbarEl) topbarEl.classList.toggle('hide', window.scrollY>20);
 });
 renderPublicNotices();
 checkAdmissionStatus();
 loadThemeOnInit();
 initLandingAnimations();
+/* ── AI Chat Assistant ── */
+let _chatbotOpened=false, _chatbotFaqs=[];
+function toggleChatbot(){
+  const win=document.getElementById('chatbot-window');
+  win.classList.toggle('open');
+  if(win.classList.contains('open') && !_chatbotOpened){
+    _chatbotOpened=true;
+    addChatMessage('bot',"Hi! I'm the ICA Assistant. Ask me about admissions, fees, results, or facilities — or tap a quick question below.");
+    loadChatbotQuickReplies();
+  }
+}
+async function loadChatbotQuickReplies(){
+  try{
+    const r=await api('list_chatbot_faqs');
+    _chatbotFaqs=r.data||[];
+    const q=document.getElementById('chatbot-quick');
+    q.innerHTML=_chatbotFaqs.slice(0,4).map(f=>`<button onclick='askChatbotQuick(${JSON.stringify(f.question).replace(/'/g,"&apos;")})'>${esc(f.question)}</button>`).join('');
+  }catch(e){}
+}
+function askChatbotQuick(q){ document.getElementById('chatbot-input').value=q; sendChatbotMessage(); }
+function addChatMessage(who, text){
+  const box=document.getElementById('chatbot-messages');
+  const div=document.createElement('div'); div.className='cb-msg '+who; div.textContent=text;
+  box.appendChild(div); box.scrollTop=box.scrollHeight;
+}
+async function sendChatbotMessage(){
+  const input=document.getElementById('chatbot-input');
+  const msg=input.value.trim(); if(!msg) return;
+  addChatMessage('user', msg); input.value='';
+  try{
+    const r=await api('chatbot_query','POST',{message:msg});
+    addChatMessage('bot', r.answer);
+  }catch(e){ addChatMessage('bot',"Sorry, I'm having trouble right now. Please call the school office for help."); }
+}
+/* ── Admin: manage Chatbot FAQs ── */
+let _chatbotFaqsAdmin=[];
+async function loadChatbotFaqsAdmin(){
+  const body=document.getElementById('chatbot-faqs-body');
+  try{
+    const r=await adm('list_chatbot_faqs');
+    _chatbotFaqsAdmin=r.data||[];
+    if(!_chatbotFaqsAdmin.length){ body.innerHTML='<tr><td colspan="4" class="no-data">No FAQs yet — add one above.</td></tr>'; return; }
+    body.innerHTML=_chatbotFaqsAdmin.map(f=>`<tr>
+      <td style="font-weight:600;">${esc(f.question)}</td>
+      <td style="font-size:12px;max-width:280px;">${esc(f.answer)}</td>
+      <td style="font-size:11px;color:var(--muted);">${esc((f.keywords||[]).join(', '))}</td>
+      <td class="tbl-actions">
+        <button class="btn-vw" onclick='editChatbotFaq(${JSON.stringify(f).replace(/'/g,"&apos;")})'>Edit</button>
+        <button class="btn-del" onclick="deleteChatbotFaq('${f.id}')">Delete</button>
+      </td>
+    </tr>`).join('');
+  }catch(e){ body.innerHTML='<tr><td colspan="4" class="no-data">Error loading FAQs.</td></tr>'; }
+}
+function editChatbotFaq(f){
+  document.getElementById('cb-edit-id').value=f.id;
+  document.getElementById('cb-question').value=f.question;
+  document.getElementById('cb-answer').value=f.answer;
+  document.getElementById('cb-keywords').value=(f.keywords||[]).join(', ');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+async function saveChatbotFaq(){
+  const id=document.getElementById('cb-edit-id').value;
+  const question=document.getElementById('cb-question').value.trim();
+  const answer=document.getElementById('cb-answer').value.trim();
+  const keywords=document.getElementById('cb-keywords').value;
+  if(!question||!answer){ toast('Question and answer are required.'); return; }
+  showLoading('Saving...');
+  try{
+    await adm('save_chatbot_faq','POST',{id:id||undefined, question, answer, keywords});
+    hideLoading(); toast('FAQ saved!');
+    document.getElementById('cb-edit-id').value='';document.getElementById('cb-question').value='';document.getElementById('cb-answer').value='';document.getElementById('cb-keywords').value='';
+    loadChatbotFaqsAdmin();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function deleteChatbotFaq(id){
+  if(!confirm('Delete this FAQ?')) return;
+  try{ await adm('delete_chatbot_faq','POST',{id}); toast('Deleted.'); loadChatbotFaqsAdmin(); }catch(e){ toast('Error: '+e.message); }
+}
 function initLandingAnimations(){
   // Fade-up / zoom reveal on scroll
   try{
@@ -5647,6 +6397,23 @@ setRating(5);
         Submit Application
       </button>
     </div>
+  </div>
+</div>
+
+<!-- AI CHAT ASSISTANT WIDGET -->
+<div id="chatbot-bubble" onclick="toggleChatbot()">
+  <span id="chatbot-bubble-icon">&#128172;</span>
+</div>
+<div id="chatbot-window">
+  <div class="cb-head">
+    <div><div class="cb-head-title">ICA Assistant</div><div class="cb-head-sub">Ask about admissions, fees, results...</div></div>
+    <button class="cb-close" onclick="toggleChatbot()">&times;</button>
+  </div>
+  <div class="cb-messages" id="chatbot-messages"></div>
+  <div class="cb-quick" id="chatbot-quick"></div>
+  <div class="cb-input-row">
+    <input type="text" id="chatbot-input" placeholder="Type your question..." onkeydown="if(event.key==='Enter')sendChatbotMessage();"/>
+    <button onclick="sendChatbotMessage()">&#10148;</button>
   </div>
 </div>
 <script>
