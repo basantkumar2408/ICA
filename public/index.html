@@ -599,6 +599,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
         <button class="btn-primary" onclick="openAdmissionPage()">Apply for Admission</button>
         <button class="btn-ghost" onclick="document.getElementById('careerSection').scrollIntoView({behavior:'smooth'})">View Careers</button>
         <button class="btn-ghost" onclick="document.getElementById('resultSection').scrollIntoView({behavior:'smooth'})">Check Result / Status</button>
+        <button class="btn-ghost" onclick="showAccLogin()">&#128100; Staff / Accounts Login</button>
       </div>
       <div class="hero-stats">
         <div class="hero-stat reveal"><div class="hero-stat-num" data-count="500" data-suffix="+">0</div><div class="hero-stat-label">Students</div></div>
@@ -784,9 +785,6 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       <div class="fg" style="margin-top:12px;"><label>Date of Birth</label><input type="date" id="trk-dob" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;"/></div>
       <button class="btn-primary" style="width:100%;margin-top:16px;" onclick="trackApplication()">Check Now</button>
       <div id="trk-error" style="color:#dc2626;font-size:12.5px;margin-top:10px;display:none;"></div>
-      <div style="text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-        <a href="#" onclick="showAccLogin();return false;" style="font-size:12.5px;color:var(--pub-secondary);font-weight:600;text-decoration:none;">&#128100; Staff / Accounts Login &rarr;</a>
-      </div>
     </div>
     <div id="trk-reset-wrap" style="max-width:700px;margin:0 auto;text-align:right;display:none;">
       <button class="btn-vw" style="margin-top:14px;" onclick="trkReset()">&#128682; Check Another / Logout</button>
@@ -1056,6 +1054,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       <div class="sb-item" id="nav-results" onclick="showPanel('results')"><span class="sb-icon">&#127891;</span>Examination</div>
       <div class="sb-item" id="nav-hiring" onclick="showPanel('hiring')"><span class="sb-icon">&#128188;</span>Hiring / Recruitment</div>
       <div class="sb-item" id="nav-duty" onclick="showPanel('duty')"><span class="sb-icon">&#128197;</span>Staff Duty Roster</div>
+      <div class="sb-item" id="nav-attendance" onclick="showPanel('attendance')"><span class="sb-icon">&#9989;</span>Student Attendance</div>
       <div class="sb-sec">ID Cards</div>
       <div class="sb-item" id="nav-staffid" onclick="showPanel('staffid')"><span class="sb-icon">&#128395;</span>Staff ID Cards</div>
       <div class="sb-item" id="nav-studentid" onclick="showPanel('studentid')"><span class="sb-icon">&#127891;</span>Student ID Cards</div>
@@ -1336,7 +1335,54 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
           <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Staff</th><th>Class</th><th>Shift</th><th>Day</th><th>Note</th><th>Actions</th></tr></thead><tbody id="duty-body"><tr><td colspan="7" class="no-data">Loading...</td></tr></tbody></table></div>
         </div>
       </div>
-      <!-- STAFF ID CARDS -->
+
+      <!-- STUDENT ATTENDANCE -->
+      <div class="admin-panel" id="panel-attendance">
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Mark Attendance</div></div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg" style="max-width:200px;"><label>Class</label>
+              <select id="att-class" onchange="loadAttendanceSheet()">
+                <option value="">Select Class</option>
+                <option>Nursery</option><option>LKG</option><option>UKG</option>
+                <option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option>
+                <option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option>
+              </select>
+            </div>
+            <div class="fg" style="max-width:180px;"><label>Date</label><input type="date" id="att-date" onchange="loadAttendanceSheet()"/></div>
+            <div class="fg" style="max-width:220px;align-self:flex-end;"><button class="btn-vw" onclick="markAllAttendance('present')">Mark All Present</button></div>
+          </div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Student</th><th>App No.</th><th>Present</th><th>Absent</th><th>Leave</th></tr></thead>
+            <tbody id="att-sheet-body"><tr><td colspan="5" class="no-data">Select a class and date.</td></tr></tbody>
+          </table></div>
+          <button class="btn-add" onclick="saveAttendanceSheet()">Save Attendance</button>
+        </div>
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title">Monthly Attendance Report</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-excel" onclick="exportAttendanceExcel()">Download Excel</button>
+              <button class="btn-add" style="background:#334155;" onclick="printAttendanceReport()">Download PDF</button>
+            </div>
+          </div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg" style="max-width:200px;"><label>Class</label>
+              <select id="att-report-class" onchange="loadAttendanceReport()">
+                <option value="">Select Class</option>
+                <option>Nursery</option><option>LKG</option><option>UKG</option>
+                <option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option>
+                <option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option>
+              </select>
+            </div>
+            <div class="fg" style="max-width:180px;"><label>Month</label><input type="month" id="att-report-month" onchange="loadAttendanceReport()"/></div>
+          </div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Student</th><th>App No.</th><th>Present</th><th>Absent</th><th>Leave</th><th>%</th></tr></thead>
+            <tbody id="att-report-body"><tr><td colspan="6" class="no-data">Select class and month.</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
       <div class="admin-panel" id="panel-staffid">
         <div class="acard">
           <div class="acard-head">
@@ -1374,7 +1420,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
               <button class="btn-excel" onclick="generateStudentIdCards('all')">Generate All (Filtered)</button>
             </div>
           </div>
-          <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Every confirmed student automatically receives a unique 3-digit school-level Student ID at enrollment. Front side shows photo, Student ID, Roll No., Name, Class &amp; Blood Group. Back side shows the Address. Select students to transfer them to a different Class / Section, individually or in bulk.</p>
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Every confirmed student automatically receives a unique 4-digit school-level Student ID at enrollment. Front side shows photo, Student ID, Roll No., Name, Class &amp; Blood Group. Back side shows the Address. Select students to transfer them to a different Class / Section, individually or in bulk.</p>
           <div class="acard-toolbar">
             <div class="filter-group">
               <select class="fi" id="stuid-class" onchange="loadStudentIdList()">
@@ -1626,6 +1672,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       <div class="sb-sec">Admissions</div>
       <div class="sb-item" id="accnav-receipt" onclick="showAccPanel('receipt')"><span class="sb-icon">&#129534;</span>Search Receipt</div>
       <div class="sb-sec">Reports</div>
+      <div class="sb-item" id="accnav-attendance" onclick="showAccPanel('attendance')"><span class="sb-icon">&#9989;</span>Staff Attendance</div>
       <div class="sb-item" id="accnav-duesentry" onclick="showAccPanel('duesentry')"><span class="sb-icon">&#128221;</span>Previous Dues Entry</div>
       <div class="sb-item" id="accnav-expenses" onclick="showAccPanel('expenses')"><span class="sb-icon">&#128184;</span>Expenses</div>
       <div class="sb-item" id="accnav-summary" onclick="showAccPanel('summary')"><span class="sb-icon">&#128200;</span>Financial Summary</div>
@@ -1689,15 +1736,53 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
         <div class="acard">
           <div class="acard-head"><div class="acard-title">Record Salary Payment</div></div>
           <div class="aform">
-            <div class="fg-row" style="max-width:700px;flex-wrap:wrap;">
+            <div class="fg-row" style="max-width:700px;flex-wrap:wrap;align-items:flex-end;">
               <div class="fg" style="max-width:220px;"><label>Staff</label><select id="sal-staff"><option value="">Select staff...</option></select></div>
               <div class="fg" style="max-width:160px;"><label>Month</label><input type="month" id="sal-month"/></div>
               <div class="fg" style="max-width:140px;"><label>Amount (Rs.) <span style="font-weight:400;color:var(--muted);">(blank = auto)</span></label><input type="number" id="sal-amount" placeholder="auto: Basic+HRA-PF"/></div>
               <div class="fg" style="max-width:160px;"><label>Mode</label><select id="sal-mode"><option>Bank Transfer</option><option>Cash</option><option>Cheque</option><option>UPI</option></select></div>
+              <div class="fg" style="max-width:200px;margin-bottom:15px;"><button type="button" class="btn-vw" onclick="useAttendanceSuggestion()">Use Attendance Suggestion</button></div>
             </div>
+            <div id="sal-suggestion-box" style="font-size:11.5px;color:var(--muted);margin:-8px 0 10px;"></div>
             <div class="fg" style="max-width:400px;"><label>Note (optional)</label><input type="text" id="sal-note"/></div>
             <button class="btn-add" onclick="addSalaryPayment()">Record Payment</button>
           </div>
+        </div>
+
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">One-Click Payroll — Generate for All Staff</div></div>
+          <p style="font-size:11.5px;color:var(--muted);margin-bottom:12px;">For the selected month, generates a salary payment for every active staff member who doesn't already have one — using their marked attendance (or a full month if attendance wasn't marked yet). Anyone already paid this month is left untouched, so this is safe to click more than once.</p>
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="fg" style="max-width:180px;margin-bottom:0;"><label>Month</label><input type="month" id="bulk-payroll-month"/></div>
+            <button class="btn-add" style="background:#166534;" onclick="runBulkPayroll()">&#9889; Generate Payroll for All Staff</button>
+          </div>
+          <div id="bulk-payroll-result" style="margin-top:14px;"></div>
+        </div>
+
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title">Salary Register (All Staff — One Month)</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-excel" onclick="exportSalaryRegisterCSV()">Download Excel</button>
+              <button class="btn-add" style="background:#334155;" onclick="printSalaryRegister()">Download PDF</button>
+            </div>
+          </div>
+          <div class="fg" style="max-width:180px;"><label>Month</label><input type="month" id="salreg-month" onchange="loadSalaryRegister()"/></div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Name</th><th>Position</th><th>Basic</th><th>HRA</th><th>PF</th><th>ESI</th><th>Net Paid</th><th>Status</th></tr></thead>
+            <tbody id="salreg-body"><tr><td colspan="8" class="no-data">Select a month.</td></tr></tbody>
+          </table></div>
+          <div id="salreg-totals" style="margin-top:10px;font-size:13px;font-weight:700;color:var(--navy);"></div>
+        </div>
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Generate Bank Transfer File</div></div>
+          <p style="font-size:11.5px;color:var(--muted);margin-bottom:12px;">Downloads one CSV with every paid staff member's Bank Name, Account Number, IFSC and Amount for the month — ready to upload straight into your bank's Corporate Internet Banking bulk-salary/NEFT portal. Works even if staff have accounts in different banks.</p>
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="fg" style="max-width:180px;margin-bottom:0;"><label>Month</label><input type="month" id="bank-file-month"/></div>
+            <button class="btn-add" onclick="generateBankTransferFile()">Preview</button>
+            <button class="btn-excel" onclick="downloadBankTransferCSV()">Download CSV</button>
+          </div>
+          <div id="bank-file-preview" style="margin-top:14px;"></div>
         </div>
         <div class="acard">
           <div class="acard-head"><div class="acard-title">Salary Payment History</div>
@@ -1749,6 +1834,36 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       </div>
 
       <!-- PREVIOUS DUES ENTRY -->
+      <!-- STAFF ATTENDANCE -->
+      <div class="admin-panel" id="accpanel-attendance">
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Mark Staff Attendance</div></div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg" style="max-width:180px;"><label>Date</label><input type="date" id="sat-date" onchange="loadStaffAttendanceSheet()"/></div>
+            <div class="fg" style="max-width:220px;align-self:flex-end;"><button class="btn-vw" onclick="markAllStaffAttendance('present')">Mark All Present</button></div>
+          </div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Staff</th><th>Type</th><th>Present</th><th>Absent</th><th>Leave</th></tr></thead>
+            <tbody id="sat-sheet-body"><tr><td colspan="5" class="no-data">Select a date.</td></tr></tbody>
+          </table></div>
+          <button class="btn-add" onclick="saveStaffAttendanceSheet()">Save Attendance</button>
+        </div>
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title">Monthly Staff Attendance Report</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-excel" onclick="exportStaffAttendanceExcel()">Download Excel</button>
+              <button class="btn-add" style="background:#334155;" onclick="printStaffAttendanceReport()">Download PDF</button>
+            </div>
+          </div>
+          <div class="fg"><label style="max-width:180px;">Month</label><input type="month" id="sat-report-month" onchange="loadStaffAttendanceReport()" style="max-width:180px;"/></div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Staff</th><th>Present</th><th>Absent</th><th>Leave</th><th>%</th><th>Suggested Net Salary</th></tr></thead>
+            <tbody id="sat-report-body"><tr><td colspan="6" class="no-data">Select a month.</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
       <div class="admin-panel" id="accpanel-duesentry">
         <div class="acard">
           <div class="acard-head"><div class="acard-title">Add a Previously-Existing Student</div></div>
@@ -1768,6 +1883,11 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
             <div class="fg"><label>Student Name</label><input type="text" id="dl-name"/></div>
             <div class="fg"><label>Father's Name</label><input type="text" id="dl-father"/></div>
             <div class="fg" style="max-width:180px;"><label>Date of Birth</label><input type="date" id="dl-dob"/></div>
+          </div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg" style="max-width:160px;"><label>Examination Roll No</label><input type="text" id="dl-exam-roll"/></div>
+            <div class="fg" style="max-width:160px;"><label>Class Roll No</label><input type="text" id="dl-class-roll"/></div>
+            <div class="fg"><label>Address</label><input type="text" id="dl-address"/></div>
           </div>
           <button class="btn-add" onclick="addLegacyStudent()">+ Add Student &amp; Generate Application No.</button>
         </div>
@@ -2014,7 +2134,7 @@ async function doLogin(){
 }
 
 function doLogout(auto){endSession();document.getElementById('adminOverlay').classList.remove('show');toast(auto?'Auto-logged out due to inactivity.':'Logged out.');}
-const TITLES={dashboard:'Dashboard',admissions:'Admission Applications',enquiries:'Parent Enquiries',notices:'Notices',gallery:'Gallery',testimonials:'Testimonials',formbuilder:'Admission Form Builder',customforms:'Custom Forms',results:'Examination',hiring:'Hiring / Recruitment',duty:'Staff Duty Roster',staffid:'Staff ID Cards',studentid:'Student ID Cards',tc:'Transfer Certificate',character:'Character Certificate',experience:'Experience Letter',chatbot:'Chatbot FAQs',sitesettings:'Site Settings',password:'Change Password'};
+const TITLES={dashboard:'Dashboard',admissions:'Admission Applications',enquiries:'Parent Enquiries',notices:'Notices',gallery:'Gallery',testimonials:'Testimonials',formbuilder:'Admission Form Builder',customforms:'Custom Forms',results:'Examination',hiring:'Hiring / Recruitment',duty:'Staff Duty Roster',attendance:'Student Attendance',staffid:'Staff ID Cards',studentid:'Student ID Cards',tc:'Transfer Certificate',character:'Character Certificate',experience:'Experience Letter',chatbot:'Chatbot FAQs',sitesettings:'Site Settings',password:'Change Password'};
 
 /* ═══════════════ ACCOUNTS PANEL (Fees, Invoices, Staff Salary) ═══════════════ */
 async function accGet(action, params){
@@ -2092,7 +2212,7 @@ function openAccountsPanel(){
   showAccPanel('dashboard');
 }
 
-const ACC_TITLES={dashboard:'Fee Dashboard',classfees:'Class Fee Structure',feestudents:'Student Fees & Invoices',staff:'Staff',salary:'Salary Payments',slip:'Salary Slip Generator',pfrecord:'PF Record',receipt:'Search Admission Receipt',duesentry:'Previous Dues Entry',expenses:'Expenses',summary:'Financial Summary'};
+const ACC_TITLES={dashboard:'Fee Dashboard',classfees:'Class Fee Structure',feestudents:'Student Fees & Invoices',staff:'Staff',salary:'Salary Payments',slip:'Salary Slip Generator',pfrecord:'PF Record',receipt:'Search Admission Receipt',duesentry:'Previous Dues Entry',expenses:'Expenses',summary:'Financial Summary',attendance:'Staff Attendance'};
 async function showAccPanel(id){
   document.querySelectorAll('#accountsOverlay .admin-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('#accountsOverlay .sb-item').forEach(a=>a.classList.remove('active'));
@@ -2109,6 +2229,7 @@ async function showAccPanel(id){
   if(id==='duesentry') await duesEntryLoadClasses();
   if(id==='expenses') await loadExpenses();
   if(id==='summary') await loadFinancialSummary();
+  if(id==='attendance') await initStaffAttendancePanel();
 }
 
 const CLASS_LIST=['Nursery','LKG','UKG','Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'];
@@ -2370,7 +2491,15 @@ function openStaffEditor(s){
     <div class="mdi"><label>Basic Pay (Rs.)</label><input type="number" id="stf-basic" value="${s?s.basic_pay||'':''}"/></div>
     <div class="mdi"><label>HRA (Rs.)</label><input type="number" id="stf-hra" value="${s?s.hra||'':''}"/></div>
     <div class="mdi full"><label>PF Deduction (%)</label><input type="number" id="stf-pf" value="${s?s.pf_percent||'':''}" placeholder="e.g. 12"/></div>
-    <div class="mdi full"><label>Bank Details</label><input type="text" id="stf-bank" value="${s?esc(s.bank_details||''):''}" placeholder="A/c No, IFSC, Bank Name"/></div>
+    <div class="mdi full"><label>ESI Deduction (%) <span style="color:var(--muted);font-weight:400;">(leave blank if not applicable)</span></label><input type="number" id="stf-esi" value="${s?s.esi_percent||'':''}" placeholder="e.g. 0.75"/></div>
+    <div class="mdi full" style="border-top:1px solid var(--border);margin-top:8px;padding-top:12px;"><b style="font-size:12.5px;">Bank Details (for Salary Transfer File)</b></div>
+    <div class="mdi"><label>Bank Name</label><input type="text" id="stf-bank-name" value="${s?esc(s.bank_name||''):''}" placeholder="e.g. Bihar Gramin Bank"/></div>
+    <div class="mdi"><label>Branch</label><input type="text" id="stf-branch" value="${s?esc(s.branch||''):''}"/></div>
+    <div class="mdi"><label>Account Number</label><input type="text" id="stf-account-no" value="${s?esc(s.account_number||''):''}"/></div>
+    <div class="mdi"><label>IFSC Code</label><input type="text" id="stf-ifsc" value="${s?esc(s.ifsc_code||''):''}"/></div>
+    <div class="mdi"><label>UAN (PF)</label><input type="text" id="stf-uan" value="${s?esc(s.uan||''):''}"/></div>
+    <div class="mdi"><label>PAN</label><input type="text" id="stf-pan" value="${s?esc(s.pan||''):''}"/></div>
+    <div class="mdi full"><label>Aadhaar Number</label><input type="text" id="stf-aadhaar" value="${s?esc(s.aadhaar||''):''}"/></div>
   `;
   document.getElementById('modal-btns').innerHTML = `<button class="btn-add" onclick="saveStaff('${s?s.id:''}')">Save</button>`;
   document.getElementById('modalBg').classList.add('show');
@@ -2397,7 +2526,14 @@ async function saveStaff(id){
     basic_pay: document.getElementById('stf-basic').value,
     hra: document.getElementById('stf-hra').value,
     pf_percent: document.getElementById('stf-pf').value,
-    bank_details: document.getElementById('stf-bank').value.trim()
+    esi_percent: document.getElementById('stf-esi').value,
+    bank_name: document.getElementById('stf-bank-name').value.trim(),
+    branch: document.getElementById('stf-branch').value.trim(),
+    account_number: document.getElementById('stf-account-no').value.trim(),
+    ifsc_code: document.getElementById('stf-ifsc').value.trim(),
+    uan: document.getElementById('stf-uan').value.trim(),
+    pan: document.getElementById('stf-pan').value.trim(),
+    aadhaar: document.getElementById('stf-aadhaar').value.trim()
   };
   if(!body.application_number || !body.name){ toast('Application number and name are required.'); return; }
   showLoading('Saving...');
@@ -2420,6 +2556,88 @@ async function loadStaffDropdowns(){
     const opts = '<option value="">Select staff...</option>' + _staffList.map(s=>`<option value="${esc(s.application_number)}">${esc(s.name)} (${esc(s.application_number)})</option>`).join('');
     ['sal-staff','sal-hist-staff','slip-staff','pf-staff-filter'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts + (id!=='sal-hist-staff'?'':''); });
   }catch(e){}
+}
+/* ═══════════════ ONE-CLICK BULK PAYROLL ═══════════════ */
+async function runBulkPayroll(){
+  const month=document.getElementById('bulk-payroll-month').value;
+  const box=document.getElementById('bulk-payroll-result');
+  if(!month){ toast('Select a month first.'); return; }
+  if(!confirm('Generate salary for all active staff for '+month+'? Staff already paid this month will be skipped.')) return;
+  showLoading('Generating payroll for all staff...');
+  try{
+    const r=await adm2('acc_bulk_generate_payroll',{month});
+    hideLoading();
+    box.innerHTML=`<div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:12px 16px;font-size:13px;color:#166534;margin-bottom:10px;">
+      &#9989; Generated for <b>${r.generated}</b> staff. Skipped <b>${r.skipped}</b> (already paid this month).
+    </div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Status</th><th>Amount</th></tr></thead>
+    <tbody>${(r.data||[]).map(x=>`<tr><td>${esc(x.name)}</td><td style="color:${x.status==='generated'?'#16a34a':'#888'};font-weight:700;">${x.status==='generated'?'Generated':'Skipped — '+esc(x.reason||'')}</td><td>${x.amount?('Rs. '+x.amount.toLocaleString('en-IN')):'-'}</td></tr>`).join('')}</tbody>
+    </table></div>`;
+    toast('Bulk payroll complete!');
+    loadSalaryRegister();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); box.innerHTML='<p style="color:#dc2626;font-size:12px;">'+esc(e.message)+'</p>'; }
+}
+
+/* ═══════════════ SALARY REGISTER ═══════════════ */
+let _salRegRows=[]; let _salRegTotals=null;
+async function loadSalaryRegister(){
+  const month=document.getElementById('salreg-month').value;
+  const body=document.getElementById('salreg-body');
+  if(!month){ body.innerHTML='<tr><td colspan="8" class="no-data">Select a month.</td></tr>'; return; }
+  body.innerHTML='<tr><td colspan="8" class="no-data">Loading...</td></tr>';
+  try{
+    const r=await accGet('acc_salary_register',{month});
+    _salRegRows=r.data||[]; _salRegTotals=r.totals;
+    if(!_salRegRows.length){ body.innerHTML='<tr><td colspan="8" class="no-data">No staff found.</td></tr>'; return; }
+    body.innerHTML=_salRegRows.map(row=>`<tr>
+      <td>${esc(row.name)}</td><td>${esc(row.position||'-')}</td>
+      <td>Rs. ${row.basic_pay.toLocaleString('en-IN')}</td><td>Rs. ${row.hra.toLocaleString('en-IN')}</td>
+      <td>Rs. ${row.pf_amount.toLocaleString('en-IN')}</td><td>Rs. ${row.esi_amount.toLocaleString('en-IN')}</td>
+      <td style="font-weight:700;">Rs. ${row.net_paid.toLocaleString('en-IN')}</td>
+      <td style="color:${row.status==='Paid'?'#16a34a':'#dc2626'};font-weight:700;">${esc(row.status)}</td>
+    </tr>`).join('');
+    document.getElementById('salreg-totals').textContent = `Totals — Basic: Rs.${_salRegTotals.basic.toLocaleString('en-IN')} | HRA: Rs.${_salRegTotals.hra.toLocaleString('en-IN')} | PF: Rs.${_salRegTotals.pf.toLocaleString('en-IN')} | ESI: Rs.${_salRegTotals.esi.toLocaleString('en-IN')} | Net Paid: Rs.${_salRegTotals.net.toLocaleString('en-IN')}`;
+  }catch(e){ body.innerHTML='<tr><td colspan="8" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+function exportSalaryRegisterCSV(){
+  if(!_salRegRows.length){ toast('Load a month first.'); return; }
+  let csv='Name,Position,Basic,HRA,PF,ESI,Net Paid,Status\n';
+  _salRegRows.forEach(r=>{ csv+=`"${r.name.replace(/"/g,'""')}","${(r.position||'').replace(/"/g,'""')}",${r.basic_pay},${r.hra},${r.pf_amount},${r.esi_amount},${r.net_paid},${r.status}\n`; });
+  downloadCSV(csv,'salary-register-'+document.getElementById('salreg-month').value+'.csv');
+}
+function printSalaryRegister(){
+  if(!_salRegRows.length){ toast('Load a month first.'); return; }
+  const month=document.getElementById('salreg-month').value;
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>Salary Register</title><style>
+    body{font-family:Arial,sans-serif;padding:30px;}
+    h2{color:#0a1628;text-align:center;}
+    table{width:100%;border-collapse:collapse;margin-top:20px;}
+    th,td{border:1px solid #ccc;padding:7px;font-size:12px;text-align:left;}
+    th{background:#f2f2f2;}
+    tfoot td{font-weight:700;background:#f8f8f8;}
+  </style></head><body>
+    <h2>IDEAL CHILDREN ACADEMY<br/><small style="font-size:14px;">Salary Register — ${esc(month)}</small></h2>
+    <table><thead><tr><th>Name</th><th>Position</th><th>Basic</th><th>HRA</th><th>PF</th><th>ESI</th><th>Net Paid</th><th>Status</th></tr></thead>
+    <tbody>${_salRegRows.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.position||'-')}</td><td>Rs.${r.basic_pay.toLocaleString('en-IN')}</td><td>Rs.${r.hra.toLocaleString('en-IN')}</td><td>Rs.${r.pf_amount.toLocaleString('en-IN')}</td><td>Rs.${r.esi_amount.toLocaleString('en-IN')}</td><td>Rs.${r.net_paid.toLocaleString('en-IN')}</td><td>${esc(r.status)}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="2">TOTAL</td><td>Rs.${_salRegTotals.basic.toLocaleString('en-IN')}</td><td>Rs.${_salRegTotals.hra.toLocaleString('en-IN')}</td><td>Rs.${_salRegTotals.pf.toLocaleString('en-IN')}</td><td>Rs.${_salRegTotals.esi.toLocaleString('en-IN')}</td><td>Rs.${_salRegTotals.net.toLocaleString('en-IN')}</td><td></td></tr></tfoot>
+    </table>
+    <div style="text-align:center;margin-top:24px;"><button onclick="window.print()" style="padding:10px 24px;background:#0a1628;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print / Save as PDF</button></div>
+  </body></html>`);
+  w.document.close(); w.focus();
+}
+
+async function useAttendanceSuggestion(){
+  const appNo=document.getElementById('sal-staff').value;
+  const month=document.getElementById('sal-month').value;
+  const box=document.getElementById('sal-suggestion-box');
+  if(!appNo||!month){ toast('Select a staff member and month first.'); return; }
+  try{
+    const r=await accGet('acc_attendance_salary_suggestion',{application_number:appNo, month});
+    const s=r.data;
+    document.getElementById('sal-amount').value=s.suggested_net;
+    box.textContent=`Based on ${s.present_days} present / ${s.absent_days} absent (of ${s.marked_days} marked days): Gross Rs.${s.suggested_gross.toLocaleString('en-IN')} − PF Rs.${s.pf_amount.toLocaleString('en-IN')}${s.esi_amount?(' − ESI Rs.'+s.esi_amount.toLocaleString('en-IN')):''} = Rs.${s.suggested_net.toLocaleString('en-IN')}`;
+  }catch(e){ box.textContent=''; toast('Error: '+e.message); }
 }
 async function addSalaryPayment(){
   const application_number=document.getElementById('sal-staff').value;
@@ -2515,13 +2733,17 @@ async function addLegacyStudent(){
   const applying_class=document.getElementById('dl-class').value;
   const section=document.getElementById('dl-section').value.trim();
   const admission_year=document.getElementById('dl-year').value;
+  const exam_roll_no=document.getElementById('dl-exam-roll').value.trim();
+  const class_roll_no=document.getElementById('dl-class-roll').value.trim();
+  const address=document.getElementById('dl-address').value.trim();
   if(!student_name||!applying_class||!admission_year){ toast('Name, Class and Admission Year are required.'); return; }
   showLoading('Adding student...');
   try{
-    const r=await adm2('acc_add_legacy_student',{student_name,father_name,dob,applying_class,section,admission_year});
+    const r=await adm2('acc_add_legacy_student',{student_name,father_name,dob,applying_class,section,admission_year,exam_roll_no,class_roll_no,address});
     hideLoading();
     toast('Student added! Application No: '+r.application_number+' — they now appear everywhere (Fee Students, ID Cards, etc).');
     document.getElementById('dl-name').value='';document.getElementById('dl-father').value='';document.getElementById('dl-dob').value='';document.getElementById('dl-section').value='';
+    document.getElementById('dl-exam-roll').value='';document.getElementById('dl-class-roll').value='';document.getElementById('dl-address').value='';
     if(document.getElementById('du-class').value===applying_class) duesEntryLoadStudents();
   }catch(e){ hideLoading(); toast('Error: '+e.message); }
 }
@@ -2624,6 +2846,110 @@ function downloadCSV(csv, filename){
 
 /* ═══════════════ FINANCIAL SUMMARY ═══════════════ */
 let _fsRowsCache=[];
+/* ═══════════════ STAFF ATTENDANCE ═══════════════ */
+let _satStaff=[];
+async function initStaffAttendancePanel(){
+  document.getElementById('sat-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('sat-report-month').value = new Date().toISOString().slice(0,7);
+  await loadStaffAttendanceSheet();
+}
+async function loadStaffAttendanceSheet(){
+  const date=document.getElementById('sat-date').value;
+  const body=document.getElementById('sat-sheet-body');
+  if(!date){ body.innerHTML='<tr><td colspan="5" class="no-data">Select a date.</td></tr>'; return; }
+  body.innerHTML='<tr><td colspan="5" class="no-data">Loading...</td></tr>';
+  try{
+    const r=await accGet('acc_list_staff',{});
+    _satStaff=(r.data||[]).filter(s=>(s.status||'active')==='active');
+    const attR=await accGet('get_staff_attendance',{date});
+    const existing={}; (attR.data||[]).forEach(x=>{ existing[x.application_number]=x.status; });
+    if(!_satStaff.length){ body.innerHTML='<tr><td colspan="5" class="no-data">No active staff found. Add staff under Staff ID Cards first.</td></tr>'; return; }
+    body.innerHTML=_satStaff.map(s=>{
+      const st=existing[s.application_number]||'present';
+      return `<tr>
+        <td>${esc(s.name)}</td><td>${s.staff_type==='non_teaching'?'Non-Teaching':'Teaching'}</td>
+        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="present" ${st==='present'?'checked':''}/></td>
+        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="absent" ${st==='absent'?'checked':''}/></td>
+        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="leave" ${st==='leave'?'checked':''}/></td>
+      </tr>`;
+    }).join('');
+  }catch(e){ body.innerHTML='<tr><td colspan="5" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+function markAllStaffAttendance(status){
+  _satStaff.forEach(s=>{
+    const radio=document.querySelector(`input[name="sat-${s.id}"][value="${status}"]`);
+    if(radio) radio.checked=true;
+  });
+}
+async function saveStaffAttendanceSheet(){
+  const date=document.getElementById('sat-date').value;
+  if(!date){ toast('Select a date first.'); return; }
+  const records=_satStaff.map(s=>{
+    const checked=document.querySelector(`input[name="sat-${s.id}"]:checked`);
+    return { application_number:s.application_number, staff_name:s.name, status: checked?checked.value:'present' };
+  });
+  showLoading('Saving attendance...');
+  try{
+    await adm2('mark_staff_attendance',{date, records});
+    hideLoading(); toast('Attendance saved for '+records.length+' staff!');
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+let _satReportRows=[];
+async function loadStaffAttendanceReport(){
+  const month=document.getElementById('sat-report-month').value;
+  const body=document.getElementById('sat-report-body');
+  if(!month){ body.innerHTML='<tr><td colspan="6" class="no-data">Select a month.</td></tr>'; return; }
+  body.innerHTML='<tr><td colspan="6" class="no-data">Loading...</td></tr>';
+  try{
+    const r=await accGet('acc_list_staff',{});
+    const staffList=(r.data||[]).filter(s=>(s.status||'active')==='active');
+    const attR=await accGet('get_staff_attendance',{month});
+    const records=attR.data||[];
+    _satReportRows=[];
+    for(const s of staffList){
+      const mine=records.filter(x=>x.application_number===s.application_number);
+      const present=mine.filter(x=>x.status==='present').length;
+      const absent=mine.filter(x=>x.status==='absent').length;
+      const leave=mine.filter(x=>x.status==='leave').length;
+      const total=mine.length||1;
+      const pct=Math.round((present/total)*100);
+      let suggestedNet='-';
+      try{ const sug=await accGet('acc_attendance_salary_suggestion',{application_number:s.application_number, month}); suggestedNet='Rs. '+sug.data.suggested_net.toLocaleString('en-IN'); }catch(e){}
+      _satReportRows.push({name:s.name, application_number:s.application_number, present, absent, leave, pct, suggestedNet});
+    }
+    if(!_satReportRows.length){ body.innerHTML='<tr><td colspan="6" class="no-data">No staff found.</td></tr>'; return; }
+    body.innerHTML=_satReportRows.map(row=>`<tr>
+      <td>${esc(row.name)}</td><td>${row.present}</td><td>${row.absent}</td><td>${row.leave}</td>
+      <td style="font-weight:700;color:${row.pct>=75?'#16a34a':'#dc2626'};">${row.pct}%</td>
+      <td>${esc(row.suggestedNet)}</td>
+    </tr>`).join('');
+  }catch(e){ body.innerHTML='<tr><td colspan="6" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+function exportStaffAttendanceExcel(){
+  if(!_satReportRows.length){ toast('Load a report first (select month).'); return; }
+  let csv='Staff Name,Application No,Present,Absent,Leave,Attendance %,Suggested Net Salary\n';
+  _satReportRows.forEach(r=>{ csv+=`"${r.name.replace(/"/g,'""')}",${r.application_number},${r.present},${r.absent},${r.leave},${r.pct},"${r.suggestedNet}"\n`; });
+  downloadCSV(csv,'staff-attendance-'+document.getElementById('sat-report-month').value+'.csv');
+}
+function printStaffAttendanceReport(){
+  if(!_satReportRows.length){ toast('Load a report first (select month).'); return; }
+  const month=document.getElementById('sat-report-month').value;
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>Staff Attendance Report</title><style>
+    body{font-family:Arial,sans-serif;padding:30px;}
+    h2{color:#0a1628;text-align:center;}
+    table{width:100%;border-collapse:collapse;margin-top:20px;}
+    th,td{border:1px solid #ccc;padding:8px;font-size:13px;text-align:left;}
+    th{background:#f2f2f2;}
+  </style></head><body>
+    <h2>IDEAL CHILDREN ACADEMY<br/><small style="font-size:14px;">Staff Attendance Report — ${esc(month)}</small></h2>
+    <table><thead><tr><th>Staff Name</th><th>Present</th><th>Absent</th><th>Leave</th><th>Attendance %</th><th>Suggested Net Salary</th></tr></thead>
+    <tbody>${_satReportRows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.present}</td><td>${r.absent}</td><td>${r.leave}</td><td>${r.pct}%</td><td>${esc(r.suggestedNet)}</td></tr>`).join('')}</tbody></table>
+    <div style="text-align:center;margin-top:24px;"><button onclick="window.print()" style="padding:10px 24px;background:#0a1628;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print / Save as PDF</button></div>
+  </body></html>`);
+  w.document.close(); w.focus();
+}
+
 async function loadFinancialSummary(){
   const period=document.getElementById('fs-period').value;
   const titleMap={daily:'Day-wise',monthly:'Month-wise',quarterly:'Quarter-wise',yearly:'Year-wise'};
@@ -2654,6 +2980,37 @@ function exportSummaryCSV(){
   let csv='Period,Fee Received,Dues Collected,Salary Paid,Expenses,Net\n';
   _fsRowsCache.forEach(r=>{ csv+=`${r.period},${r.fee_received},${r.dues_received},${r.salary_paid},${r.expenses},${r.net}\n`; });
   downloadCSV(csv,'financial-summary.csv');
+}
+
+/* ═══════════════ BANK TRANSFER FILE ═══════════════ */
+let _bankFileRows=[];
+async function generateBankTransferFile(){
+  const month=document.getElementById('bank-file-month').value;
+  if(!month){ toast('Select a month first.'); return; }
+  const box=document.getElementById('bank-file-preview');
+  box.innerHTML='<p style="font-size:12px;color:var(--muted);">Loading...</p>';
+  try{
+    const r=await accGet('acc_bank_transfer_file',{month});
+    _bankFileRows=r.data||[];
+    if(!_bankFileRows.length){ box.innerHTML='<p style="font-size:12px;color:var(--muted);">No salary payments recorded for this month yet.</p>'; return; }
+    const missing=_bankFileRows.filter(r=>!r.ready).length;
+    box.innerHTML=`
+      ${missing?`<p style="font-size:12px;color:#dc2626;margin-bottom:8px;">&#9888; ${missing} staff member(s) are missing bank details (Account No. / IFSC) — edit their profile under Staff to add these before uploading to the bank.</p>`:''}
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Name</th><th>Bank</th><th>Account No.</th><th>IFSC</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody>${_bankFileRows.map(r=>`<tr>
+          <td>${esc(r.name)}</td><td>${esc(r.bank_name||'-')}</td><td>${esc(r.account_number||'-')}</td><td>${esc(r.ifsc_code||'-')}</td>
+          <td>Rs. ${r.amount.toLocaleString('en-IN')}</td>
+          <td style="color:${r.ready?'#16a34a':'#dc2626'};font-weight:700;">${r.ready?'Ready':'Missing Bank Details'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }catch(e){ box.innerHTML='<p style="font-size:12px;color:#dc2626;">Error: '+esc(e.message)+'</p>'; }
+}
+function downloadBankTransferCSV(){
+  if(!_bankFileRows.length){ toast('Click "Preview" first to load a month.'); return; }
+  let csv='Employee Name,Bank Name,Branch,Account Number,IFSC Code,Amount\n';
+  _bankFileRows.forEach(r=>{ csv+=`"${(r.name||'').replace(/"/g,'""')}","${(r.bank_name||'').replace(/"/g,'""')}","${(r.branch||'').replace(/"/g,'""')}",${r.account_number||''},${r.ifsc_code||''},${r.amount}\n`; });
+  downloadCSV(csv,'bank-salary-transfer-'+document.getElementById('bank-file-month').value+'.csv');
 }
 
 // ── Salary Slip (single month or range e.g. 6/12 months) ──
@@ -2720,11 +3077,12 @@ async function showPanel(id){
   if(id==='results')await loadResults();
   if(id==='hiring')await loadHiringResults();
   if(id==='duty')await loadDutyRoster();
+  if(id==='attendance')await initAttendancePanel();
   if(id==='staffid')await loadStaffIdList();
   if(id==='studentid')await loadStudentIdList();
-  if(id==='tc'){_certSearchResults=[];_certSelected=null;renderCertSearchResults('tc');}
-  if(id==='character'){_certSearchResults=[];_certSelected=null;renderCertSearchResults('character');}
-  if(id==='experience'){_certSearchResults=[];_certSelected=null;renderCertSearchResults('experience');}
+  if(id==='tc'){_certSearchResults=[];_certSelected={};renderCertSearchResults('tc');}
+  if(id==='character'){_certSearchResults=[];_certSelected={};renderCertSearchResults('character');}
+  if(id==='experience'){_certSearchResults=[];_certSelected={};renderCertSearchResults('experience');}
   if(id==='chatbot')await loadChatbotFaqsAdmin();
   if(id==='sitesettings')await loadSiteSettings();
 }
@@ -4570,6 +4928,115 @@ function showToppers(mode){
 
 // ── Staff Duty / Shift Roster ──
 let _dutyList=[];
+/* ═══════════════ STUDENT ATTENDANCE ═══════════════ */
+let _attStudents=[];
+async function initAttendancePanel(){
+  document.getElementById('att-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('att-report-month').value = new Date().toISOString().slice(0,7);
+}
+async function loadAttendanceSheet(){
+  const cls=document.getElementById('att-class').value;
+  const date=document.getElementById('att-date').value;
+  const body=document.getElementById('att-sheet-body');
+  if(!cls||!date){ body.innerHTML='<tr><td colspan="5" class="no-data">Select a class and date.</td></tr>'; return; }
+  body.innerHTML='<tr><td colspan="5" class="no-data">Loading...</td></tr>';
+  try{
+    const headers={}; if(_adminToken) headers['x-admin-token']=_adminToken;
+    const resp=await fetch(ADM_API+'?action=list_students&class_name='+encodeURIComponent(cls),{headers});
+    const d=await resp.json(); if(!d.success) throw new Error(d.error);
+    _attStudents=d.data||[];
+    const existResp=await fetch(ADM_API+'?action=get_student_attendance&class_name='+encodeURIComponent(cls)+'&date='+date,{headers});
+    const existD=await existResp.json();
+    const existing={}; (existD.data||[]).forEach(r=>{ existing[r.application_number]=r.status; });
+    if(!_attStudents.length){ body.innerHTML='<tr><td colspan="5" class="no-data">No students in this class.</td></tr>'; return; }
+    body.innerHTML=_attStudents.map(s=>{
+      const st=existing[s.application_number]||'present';
+      return `<tr>
+        <td>${esc(s.student_name)}</td><td>${esc(s.application_number)}</td>
+        <td style="text-align:center;"><input type="radio" name="att-${s.id}" value="present" ${st==='present'?'checked':''}/></td>
+        <td style="text-align:center;"><input type="radio" name="att-${s.id}" value="absent" ${st==='absent'?'checked':''}/></td>
+        <td style="text-align:center;"><input type="radio" name="att-${s.id}" value="leave" ${st==='leave'?'checked':''}/></td>
+      </tr>`;
+    }).join('');
+  }catch(e){ body.innerHTML='<tr><td colspan="5" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+function markAllAttendance(status){
+  _attStudents.forEach(s=>{
+    const radio=document.querySelector(`input[name="att-${s.id}"][value="${status}"]`);
+    if(radio) radio.checked=true;
+  });
+}
+async function saveAttendanceSheet(){
+  const cls=document.getElementById('att-class').value;
+  const date=document.getElementById('att-date').value;
+  if(!cls||!date){ toast('Select class and date first.'); return; }
+  const records=_attStudents.map(s=>{
+    const checked=document.querySelector(`input[name="att-${s.id}"]:checked`);
+    return { application_number:s.application_number, student_name:s.student_name, status: checked?checked.value:'present' };
+  });
+  showLoading('Saving attendance...');
+  try{
+    await adm('mark_student_attendance','POST',{class_name:cls, date, records});
+    hideLoading(); toast('Attendance saved for '+records.length+' students!');
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+let _attReportRows=[];
+async function loadAttendanceReport(){
+  const cls=document.getElementById('att-report-class').value;
+  const month=document.getElementById('att-report-month').value;
+  const body=document.getElementById('att-report-body');
+  if(!cls||!month){ body.innerHTML='<tr><td colspan="6" class="no-data">Select class and month.</td></tr>'; return; }
+  body.innerHTML='<tr><td colspan="6" class="no-data">Loading...</td></tr>';
+  try{
+    const headers={}; if(_adminToken) headers['x-admin-token']=_adminToken;
+    const resp=await fetch(ADM_API+'?action=list_students&class_name='+encodeURIComponent(cls),{headers});
+    const d=await resp.json(); if(!d.success) throw new Error(d.error);
+    const students=d.data||[];
+    const attResp=await fetch(ADM_API+'?action=get_student_attendance&class_name='+encodeURIComponent(cls)+'&month='+month,{headers});
+    const attD=await attResp.json();
+    const records=attD.data||[];
+    _attReportRows=students.map(s=>{
+      const mine=records.filter(r=>r.application_number===s.application_number);
+      const present=mine.filter(r=>r.status==='present').length;
+      const absent=mine.filter(r=>r.status==='absent').length;
+      const leave=mine.filter(r=>r.status==='leave').length;
+      const total=mine.length||1;
+      const pct=Math.round((present/total)*100);
+      return { student_name:s.student_name, application_number:s.application_number, present, absent, leave, pct };
+    });
+    if(!_attReportRows.length){ body.innerHTML='<tr><td colspan="6" class="no-data">No students in this class.</td></tr>'; return; }
+    body.innerHTML=_attReportRows.map(r=>`<tr>
+      <td>${esc(r.student_name)}</td><td>${esc(r.application_number)}</td>
+      <td>${r.present}</td><td>${r.absent}</td><td>${r.leave}</td>
+      <td style="font-weight:700;color:${r.pct>=75?'#16a34a':'#dc2626'};">${r.pct}%</td>
+    </tr>`).join('');
+  }catch(e){ body.innerHTML='<tr><td colspan="6" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+function exportAttendanceExcel(){
+  if(!_attReportRows.length){ toast('Load a report first (select class + month).'); return; }
+  let csv='Student Name,Application No,Present,Absent,Leave,Attendance %\n';
+  _attReportRows.forEach(r=>{ csv+=`"${r.student_name.replace(/"/g,'""')}",${r.application_number},${r.present},${r.absent},${r.leave},${r.pct}\n`; });
+  downloadCSV(csv,'attendance-'+document.getElementById('att-report-class').value+'-'+document.getElementById('att-report-month').value+'.csv');
+}
+function printAttendanceReport(){
+  if(!_attReportRows.length){ toast('Load a report first (select class + month).'); return; }
+  const cls=document.getElementById('att-report-class').value, month=document.getElementById('att-report-month').value;
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>Attendance Report</title><style>
+    body{font-family:Arial,sans-serif;padding:30px;}
+    h2{color:#0a1628;text-align:center;}
+    table{width:100%;border-collapse:collapse;margin-top:20px;}
+    th,td{border:1px solid #ccc;padding:8px;font-size:13px;text-align:left;}
+    th{background:#f2f2f2;}
+  </style></head><body>
+    <h2>IDEAL CHILDREN ACADEMY<br/><small style="font-size:14px;">Attendance Report — Class ${esc(cls)} — ${esc(month)}</small></h2>
+    <table><thead><tr><th>Student Name</th><th>Application No</th><th>Present</th><th>Absent</th><th>Leave</th><th>Attendance %</th></tr></thead>
+    <tbody>${_attReportRows.map(r=>`<tr><td>${esc(r.student_name)}</td><td>${esc(r.application_number)}</td><td>${r.present}</td><td>${r.absent}</td><td>${r.leave}</td><td>${r.pct}%</td></tr>`).join('')}</tbody></table>
+    <div style="text-align:center;margin-top:24px;"><button onclick="window.print()" style="padding:10px 24px;background:#0a1628;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print / Save as PDF</button></div>
+  </body></html>`);
+  w.document.close(); w.focus();
+}
+
 async function loadDutyRoster(){
   const body=document.getElementById('duty-body');
   body.innerHTML='<tr><td colspan="7" class="no-data">Loading...</td></tr>';
@@ -5055,6 +5522,7 @@ function renderCertForm(panel){
           <div class="fg" style="max-width:200px;"><label>School Dues Cleared</label><select id="tc-dues"><option>Yes</option><option>No</option></select></div>
         </div>
         <div class="fg"><label>Remarks</label><input type="text" id="tc-remarks"/></div>
+        <div class="fg-row" style="flex-wrap:wrap;"><div class="fg"><label>Additional Field Label <span style="font-weight:400;color:var(--muted);">(optional — leave blank to skip)</span></label><input type="text" id="tc-extra-label" placeholder="e.g. Extra-Curricular Activities"/></div><div class="fg"><label>Additional Field Value</label><input type="text" id="tc-extra-value"/></div></div>
         <div class="fg-row" style="align-items:center;margin-top:6px;">
           <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;"><input type="checkbox" id="tc-accountant-sign" style="width:auto;"/> Include Accountant signature line</label>
         </div>
@@ -5070,6 +5538,7 @@ function renderCertForm(panel){
           <div class="fg" style="max-width:220px;"><label>Purpose</label><input type="text" id="cc-purpose" placeholder="e.g. Higher Studies"/></div>
         </div>
         <div class="fg"><label>Character Remark</label><input type="text" id="cc-remark" value="Good moral character and conduct."/></div>
+        <div class="fg-row" style="flex-wrap:wrap;"><div class="fg"><label>Additional Field Label <span style="font-weight:400;color:var(--muted);">(optional — leave blank to skip)</span></label><input type="text" id="cc-extra-label" placeholder="e.g. Special Achievement"/></div><div class="fg"><label>Additional Field Value</label><input type="text" id="cc-extra-value"/></div></div>
         <div class="fg-row" style="align-items:center;margin-top:6px;">
           <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;"><input type="checkbox" id="cc-accountant-sign" style="width:auto;"/> Include Accountant signature line</label>
         </div>
@@ -5085,6 +5554,7 @@ function renderCertForm(panel){
           <div class="fg" style="max-width:220px;"><label>Designation Held</label><input type="text" id="exp-designation" value="${esc(s.position||'')}"/></div>
         </div>
         <div class="fg"><label>Remarks / Nature of Work</label><input type="text" id="exp-remarks" placeholder="e.g. Sincere, hardworking and dedicated to duty."/></div>
+        <div class="fg-row" style="flex-wrap:wrap;"><div class="fg"><label>Additional Field Label <span style="font-weight:400;color:var(--muted);">(optional — leave blank to skip)</span></label><input type="text" id="exp-extra-label" placeholder="e.g. Salary Drawn"/></div><div class="fg"><label>Additional Field Value</label><input type="text" id="exp-extra-value"/></div></div>
         <div class="fg-row" style="align-items:center;margin-top:6px;">
           <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;"><input type="checkbox" id="exp-accountant-sign" style="width:auto;"/> Include Accountant signature line</label>
         </div>
@@ -5099,13 +5569,13 @@ async function generateCert(panel){
     let payload, action;
     if(panel==='tc'){
       action='generate_certificate';
-      payload={type:'tc', student_fee_id:s.id, admission_date:document.getElementById('tc-admission-date').value, leaving_date:document.getElementById('tc-leaving-date').value, reason:document.getElementById('tc-reason').value, conduct:document.getElementById('tc-conduct').value, promotion:document.getElementById('tc-promotion').value, dues:document.getElementById('tc-dues').value, remarks:document.getElementById('tc-remarks').value, accountant_sign:document.getElementById('tc-accountant-sign').checked};
+      payload={type:'tc', student_fee_id:s.id, admission_date:document.getElementById('tc-admission-date').value, leaving_date:document.getElementById('tc-leaving-date').value, reason:document.getElementById('tc-reason').value, conduct:document.getElementById('tc-conduct').value, promotion:document.getElementById('tc-promotion').value, dues:document.getElementById('tc-dues').value, remarks:document.getElementById('tc-remarks').value, accountant_sign:document.getElementById('tc-accountant-sign').checked, extra_label:document.getElementById('tc-extra-label').value, extra_value:document.getElementById('tc-extra-value').value};
     } else if(panel==='character'){
       action='generate_certificate';
-      payload={type:'character', student_fee_id:s.id, studied_from:document.getElementById('cc-from').value, studied_to:document.getElementById('cc-to').value, purpose:document.getElementById('cc-purpose').value, remark:document.getElementById('cc-remark').value, accountant_sign:document.getElementById('cc-accountant-sign').checked};
+      payload={type:'character', student_fee_id:s.id, studied_from:document.getElementById('cc-from').value, studied_to:document.getElementById('cc-to').value, purpose:document.getElementById('cc-purpose').value, remark:document.getElementById('cc-remark').value, accountant_sign:document.getElementById('cc-accountant-sign').checked, extra_label:document.getElementById('cc-extra-label').value, extra_value:document.getElementById('cc-extra-value').value};
     } else {
       action='generate_experience_letter';
-      payload={staff_fee_id:s.id, joining_date:document.getElementById('exp-joining-date').value, leaving_date:document.getElementById('exp-leaving-date').value, designation_held:document.getElementById('exp-designation').value, remarks:document.getElementById('exp-remarks').value, accountant_sign:document.getElementById('exp-accountant-sign').checked};
+      payload={staff_fee_id:s.id, joining_date:document.getElementById('exp-joining-date').value, leaving_date:document.getElementById('exp-leaving-date').value, designation_held:document.getElementById('exp-designation').value, remarks:document.getElementById('exp-remarks').value, accountant_sign:document.getElementById('exp-accountant-sign').checked, extra_label:document.getElementById('exp-extra-label').value, extra_value:document.getElementById('exp-extra-value').value};
     }
     const r = await adm(action,'POST',payload);
     hideLoading();
@@ -5153,6 +5623,7 @@ function buildTcHtml(c, cfg){
       <tr><td>Conduct &amp; Character</td><td>${esc(c.conduct||'-')}</td></tr>
       <tr><td>Qualified for Promotion To</td><td>${esc(c.promotion||'-')}</td></tr>
       <tr><td>School Dues Cleared</td><td>${esc(c.dues||'-')}</td></tr>
+      ${c.extra_label?`<tr><td>${esc(c.extra_label)}</td><td>${esc(c.extra_value||'-')}</td></tr>`:''}
     </table>
     ${c.remarks?`<p><b>Remarks:</b> ${esc(c.remarks)}</p>`:''}
   </div>
@@ -5171,6 +5642,7 @@ function buildCharacterHtml(c, cfg){
     <p>This is to certify that <b>${esc(c.student_name)}</b>, son/daughter of <b>${esc(c.father_name||'-')}</b>, Application No. <b>${esc(c.application_number)}</b>, was a student of this school${c.studied_from||c.studied_to?(' from <b>'+esc(c.studied_from||'-')+'</b> to <b>'+esc(c.studied_to||'-')+'</b>'):''}.</p>
     <p>${esc(c.remark||'Good moral character and conduct.')}</p>
     ${c.purpose?`<p>This certificate is issued for the purpose of: <b>${esc(c.purpose)}</b>.</p>`:''}
+    ${c.extra_label?`<p><b>${esc(c.extra_label)}:</b> ${esc(c.extra_value||'-')}</p>`:''}
   </div>
   ${certSignRow(cfg, c.accountant_sign)}
   ${qr?`<div class="cf-qr-wrap">${qr}<div class="cf-qr-label">Scan to verify authenticity</div></div>`:''}
@@ -5188,6 +5660,7 @@ function buildExperienceHtml(c, cfg){
     <table class="cf-tbl">
       <tr><td>Date of Joining</td><td>${c.joining_date?new Date(c.joining_date).toLocaleDateString('en-IN'):'-'}</td></tr>
       <tr><td>Date of Leaving</td><td>${c.leaving_date?new Date(c.leaving_date).toLocaleDateString('en-IN'):'-'}</td></tr>
+      ${c.extra_label?`<tr><td>${esc(c.extra_label)}</td><td>${esc(c.extra_value||'-')}</td></tr>`:''}
     </table>
     <p>${esc(c.remarks||'During the tenure, the conduct and performance were found to be satisfactory.')}</p>
     <p>We wish them success in all future endeavours.</p>
@@ -5388,7 +5861,8 @@ function openResultEditor(id, forcedCategory){
       <div class="mdi"><label>Marksheet No ${d.marksheet_no?'':'(auto-generated on save)'}</label><input type="text" value="${esc(d.marksheet_no||'Will be generated automatically')}" disabled style="background:#f1f3f7;font-weight:700;"/></div>
       <div class="mdi"><label>Class</label><input type="text" id="re-class" value="${esc(d.class_name||'')}"/></div>
       <div class="mdi"><label>Section</label><input type="text" id="re-section" value="${esc(d.section||'')}"/></div>
-      <div class="mdi"><label>Roll No</label><input type="text" id="re-roll" value="${esc(d.roll_no||'')}"/></div>
+      <div class="mdi"><label>Examination Roll No</label><input type="text" id="re-roll" value="${esc(d.roll_no||'')}"/></div>
+      <div class="mdi"><label>Class Roll No</label><input type="text" id="re-classroll" value="${esc(d.class_roll_no||'')}"/></div>
       <div class="mdi"><label>Father's Name</label><input type="text" id="re-father" value="${esc(d.father_name||'')}"/></div>
       <div class="mdi full">
         <label>Subjects &amp; Marks — FA1 / FA2 / FA3 (Formative Assessment) + End Term</label>
@@ -5570,6 +6044,7 @@ async function saveResult(){
       class_name: document.getElementById('re-class').value,
       section: document.getElementById('re-section').value,
       roll_no: document.getElementById('re-roll').value,
+      class_roll_no: document.getElementById('re-classroll').value,
       father_name: document.getElementById('re-father').value,
       exam_name: reGetExamName(),
       subjects: _reSubjects.filter(s=>s.name),
@@ -6178,6 +6653,7 @@ function buildLetterPageHTML(d, s){
   }
 
   const subjectTitle = isHiringLetter ? letterTitle : (d.category==='hiring' ? 'Selection Result' : 'Academic Result');
+  const letterQr = d.id ? `<img src="${idCardQrUrl('marksheet', d.id)}" style="width:76px;height:76px;"/>` : '';
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${esc(subjectTitle)} - ${esc(d.application_number)}</title>
   <style>
@@ -6209,7 +6685,7 @@ function buildLetterPageHTML(d, s){
       <div style="text-align:center;font-size:12px;color:#a67c1e;font-weight:700;margin-top:-10px;margin-bottom:14px;text-transform:uppercase;letter-spacing:.4px;">${esc(d.exam_name||'Annual Examination')}</div>
       <div style="font-size:13px;color:#444;line-height:1.9;">
         Student Name: <b>${esc(d.student_name)}</b>${d.father_name?(' &nbsp;|&nbsp; Father\'s Name: <b>'+esc(d.father_name)+'</b>'):''}<br/>
-        Application No: <b>${esc(d.application_number)}</b>${d.class_name?(' &nbsp;|&nbsp; Class: <b>'+esc(d.class_name)+(d.section?(' - '+esc(d.section)):'')+'</b>'):''}${d.roll_no?(' &nbsp;|&nbsp; Roll No: <b>'+esc(d.roll_no)+'</b>'):''}
+        Application No: <b>${esc(d.application_number)}</b>${d.class_name?(' &nbsp;|&nbsp; Class: <b>'+esc(d.class_name)+(d.section?(' - '+esc(d.section)):'')+'</b>'):''}${d.roll_no?(' &nbsp;|&nbsp; Exam Roll No: <b>'+esc(d.roll_no)+'</b>'):''}${d.class_roll_no?(' &nbsp;|&nbsp; Class Roll No: <b>'+esc(d.class_roll_no)+'</b>'):''}
       </div>` : `<div style="font-size:13px;color:#444;">Application No: <b>${esc(d.application_number)}</b></div>`}
       ${bodyHtml}
       <div class="sig-row">
@@ -6218,6 +6694,7 @@ function buildLetterPageHTML(d, s){
         <div class="sig-box">${sigPrincipal}<div class="sig-line">${principalPhoto}${esc(principalName)}<br/>Principal</div></div>
       </div>
       ${stamp}
+      ${letterQr ? `<div style="position:absolute;left:46px;bottom:60px;text-align:center;">${letterQr}<div style="font-size:9px;color:#888;margin-top:2px;">Scan to verify</div></div>` : ''}
       <p style="margin-top:34px;font-size:10px;color:#999;text-align:center;">This is a system-generated letter and is valid without a physical stamp when issued digitally.</p>
     </div>
     <div class="no-print" style="text-align:center;margin-top:16px;">

@@ -771,7 +771,7 @@ if (
           const monthlyFee = fee_breakdown.tuition + fee_breakdown.computer + fee_breakdown.library + customTotal;
           const existingFS = await db.collection('fee_students').findOne({ application_number: adm.application_number });
           // School-level Student ID — a unique 3-digit number, assigned once from enrollment (Confirmed admission).
-          const studentId = (existingFS && existingFS.student_id) || await generateUniqueNumericId(db, 'fee_students', 'student_id', 3);
+          const studentId = (existingFS && existingFS.student_id) || await generateUniqueNumericId(db, 'fee_students', 'student_id', 4);
           await db.collection('fee_students').updateOne(
             { application_number: adm.application_number },
             { $set: {
@@ -819,6 +819,85 @@ if (
       const oid = toOid(body.id); if (!oid) return err(res, 'Missing id');
       await db.collection('admissions').deleteOne({ _id: oid });
       return ok(res, {});
+    }
+
+    /* ═══════════ ATTENDANCE ═══════════ */
+    // Student attendance is managed from the Admin Panel, by Class + Date.
+    if (action === 'mark_student_attendance' && req.method === 'POST') {
+      if (!isAdmin(req)) return err(res, 'Unauthorized', 401);
+      const { class_name, date, records } = body;
+      if (!class_name || !date || !Array.isArray(records)) return err(res, 'Class, date, and records are required.');
+      const ops = records.map(r => ({
+        updateOne: {
+          filter: { application_number: r.application_number, date },
+          update: { $set: { application_number: r.application_number, student_name: r.student_name || '', class_name, date, status: r.status || 'present', updated_at: nowIso() } },
+          upsert: true
+        }
+      }));
+      if (ops.length) await db.collection('student_attendance').bulkWrite(ops);
+      return ok(res, { marked: ops.length });
+    }
+    if (action === 'get_student_attendance' && req.method === 'GET') {
+      if (!isAdmin(req)) return err(res, 'Unauthorized', 401);
+      const { class_name, date, month } = req.query;
+      const filter = {};
+      if (class_name) filter.class_name = class_name;
+      if (date) filter.date = date;
+      if (month) filter.date = { $regex: '^' + month };
+      const data = await db.collection('student_attendance').find(filter).sort({ date: 1 }).toArray();
+      return ok(res, { data: mapDocs(data) });
+    }
+
+    // Staff attendance (teaching + non-teaching) is managed from the Accounts Panel, and feeds
+    // into the salary suggestion below.
+    if (action === 'mark_staff_attendance' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const { date, records } = body;
+      if (!date || !Array.isArray(records)) return err(res, 'Date and records are required.');
+      const ops = records.map(r => ({
+        updateOne: {
+          filter: { application_number: r.application_number, date },
+          update: { $set: { application_number: r.application_number, staff_name: r.staff_name || '', date, status: r.status || 'present', updated_at: nowIso() } },
+          upsert: true
+        }
+      }));
+      if (ops.length) await db.collection('staff_attendance').bulkWrite(ops);
+      return ok(res, { marked: ops.length });
+    }
+    if (action === 'get_staff_attendance' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const { date, month } = req.query;
+      const filter = {};
+      if (date) filter.date = date;
+      if (month) filter.date = { $regex: '^' + month };
+      const data = await db.collection('staff_attendance').find(filter).sort({ date: 1 }).toArray();
+      return ok(res, { data: mapDocs(data) });
+    }
+    // Suggests a salary for the month based on Present/Leave/Absent days actually marked —
+    // per-day rate = (Basic + HRA) / days in month. Accountant can still override the final
+    // amount when recording the payment; this is a starting suggestion, not an automatic deduction.
+    if (action === 'acc_attendance_salary_suggestion' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const { application_number, month } = req.query;
+      if (!application_number || !month) return err(res, 'Application number and month are required.');
+      const staff = await db.collection('staff').findOne({ application_number });
+      if (!staff) return err(res, 'Staff not found.');
+      const records = await db.collection('staff_attendance').find({ application_number, date: { $regex: '^' + month } }).toArray();
+      const daysInMonth = new Date(Number(month.split('-')[0]), Number(month.split('-')[1]), 0).getDate();
+      const presentDays = records.filter(r => r.status === 'present' || r.status === 'half_day' || r.status === 'leave').length;
+      const absentDays = records.filter(r => r.status === 'absent').length;
+      const gross = (staff.basic_pay || 0) + (staff.hra || 0);
+      const perDay = gross / daysInMonth;
+      const suggested = Math.round(perDay * (daysInMonth - absentDays));
+      const pfAmount = Math.round(((staff.basic_pay || 0) * (staff.pf_percent || 0)) / 100);
+      const esiAmount = Math.round(((staff.basic_pay || 0) * (staff.esi_percent || 0)) / 100);
+      return ok(res, {
+        data: {
+          days_in_month: daysInMonth, marked_days: records.length, present_days: presentDays, absent_days: absentDays,
+          per_day_rate: Math.round(perDay), gross_pay: gross, suggested_gross: suggested,
+          pf_amount: pfAmount, esi_amount: esiAmount, suggested_net: Math.max(0, suggested - pfAmount - esiAmount)
+        }
+      });
     }
 
     /* ═══════════ CERTIFICATES: Transfer Certificate / Character Certificate / Experience Letter ═══════════ */
@@ -1055,7 +1134,7 @@ if (
     }
     if (action === 'save_result' && req.method === 'POST') {
       const {
-        id, application_number, dob, category, student_name, class_name, section, roll_no, father_name, exam_name,
+        id, application_number, dob, category, student_name, class_name, section, roll_no, class_roll_no, father_name, exam_name,
         photo_url, subjects, total_marks, max_marks, percentage, grade,
         result_status, remarks, position, department, joining_date, salary,
         reporting_time, offer_note, letter_type, letter_body
@@ -1116,7 +1195,7 @@ if (
         application_number: String(application_number).trim(),
         dob: String(dob).trim(),
         category: category || 'academic', // 'academic' | 'hiring'
-        student_name, class_name: class_name || '', section: section || '', roll_no: roll_no || '',
+        student_name, class_name: class_name || '', section: section || '', roll_no: roll_no || '', class_roll_no: class_roll_no || '',
         father_name: father_name || '',
         exam_name: isAcademic ? cleanExamName : '',
         marksheet_no: marksheetNo,
@@ -1470,7 +1549,7 @@ if (
     // numbers never collide.
     if (action === 'acc_add_legacy_student' && req.method === 'POST') {
       if (!(await requireAccounts(req, res, db))) return;
-      const { student_name, father_name, dob, applying_class, section, admission_year } = body;
+      const { student_name, father_name, dob, applying_class, section, admission_year, exam_roll_no, class_roll_no, address } = body;
       if (!student_name || !applying_class || !admission_year) return err(res, 'Name, Class and Admission Year are required.');
       const yearPrefix = String(admission_year).split('-')[0];
 
@@ -1488,14 +1567,15 @@ if (
       const admDoc = {
         application_number: appNumber, student_name, father_name: father_name || '', dob: dob || '',
         applying_class, contact_phone: '', status: 'Confirmed', academic_year: String(admission_year),
-        source: 'accounts_backfill', created_at: nowIso()
+        address: address || '', source: 'accounts_backfill', created_at: nowIso()
       };
       await db.collection('admissions').insertOne(admDoc);
 
-      const studentId = await generateUniqueNumericId(db, 'fee_students', 'student_id', 3);
+      const studentId = await generateUniqueNumericId(db, 'fee_students', 'student_id', 4);
       const feeDoc = {
         application_number: appNumber, student_name, applying_class, section: section || '',
         father_name: father_name || '', student_id: studentId, academic_year: String(admission_year),
+        exam_roll_no: exam_roll_no || '', class_roll_no: class_roll_no || '', address: address || '',
         fee_breakdown: { tuition: 0, computer: 0, library: 0, custom: [] }, monthly_fee: 0,
         exam_allowed: true, van_applicable: false, other_applicable: false,
         created_at: nowIso(), updated_at: nowIso()
@@ -1627,8 +1707,9 @@ if (
     if (action === 'acc_save_staff' && req.method === 'POST') {
       if (!(await requireAccounts(req, res, db))) return;
       const {
-        id, application_number, name, position, department, monthly_salary, bank_details, basic_pay, hra, pf_percent,
-        staff_type, father_name, blood_group, address
+        id, application_number, name, position, department, monthly_salary, bank_details, basic_pay, hra, pf_percent, esi_percent,
+        staff_type, father_name, blood_group, address,
+        bank_name, branch, account_number, ifsc_code, uan, pan, aadhaar
       } = body;
       if (!application_number || !name) return err(res, 'Application number and name are required.');
 
@@ -1641,6 +1722,9 @@ if (
         application_number, name, position: position || '', department: department || '',
         monthly_salary: Number(monthly_salary) || 0, bank_details: bank_details || '',
         basic_pay: Number(basic_pay) || 0, hra: Number(hra) || 0, pf_percent: Number(pf_percent) || 0,
+        esi_percent: Number(esi_percent) || 0,
+        bank_name: bank_name || '', branch: branch || '', account_number: account_number || '',
+        ifsc_code: ifsc_code || '', uan: uan || '', pan: pan || '', aadhaar: aadhaar || '',
         updated_at: nowIso()
       };
       // ID Card / HR fields — only overwrite when provided so the Accounts (salary-only)
@@ -1697,22 +1781,120 @@ if (
       const { application_number, name, month, mode, note } = body;
       if (!application_number || !month) return err(res, 'Application number and month are required.');
       const staff = await db.collection('staff').findOne({ application_number });
-      // Basic/HRA/PF% default from the staff record but can be overridden per payment.
+      // Basic/HRA/PF%/ESI% default from the staff record but can be overridden per payment.
       const basic_pay = body.basic_pay !== undefined && body.basic_pay !== '' ? Number(body.basic_pay) : ((staff && staff.basic_pay) || 0);
       const hra = body.hra !== undefined && body.hra !== '' ? Number(body.hra) : ((staff && staff.hra) || 0);
       const pf_percent = body.pf_percent !== undefined && body.pf_percent !== '' ? Number(body.pf_percent) : ((staff && staff.pf_percent) || 0);
+      const esi_percent = body.esi_percent !== undefined && body.esi_percent !== '' ? Number(body.esi_percent) : ((staff && staff.esi_percent) || 0);
       const pf_amount = Math.round((basic_pay * pf_percent) / 100);
+      const esi_amount = Math.round((basic_pay * esi_percent) / 100);
       const gross_pay = basic_pay + hra;
-      // If a manual "amount" is given, use it as the final net pay; otherwise auto-calculate (Basic + HRA - PF).
-      const netPay = (body.amount !== undefined && body.amount !== '') ? Number(body.amount) : Math.max(0, gross_pay - pf_amount);
+      // If a manual "amount" is given, use it as the final net pay; otherwise auto-calculate (Basic + HRA - PF - ESI).
+      const netPay = (body.amount !== undefined && body.amount !== '') ? Number(body.amount) : Math.max(0, gross_pay - pf_amount - esi_amount);
       if (!netPay && !gross_pay) return err(res, 'Enter either an Amount, or Basic Pay/HRA to auto-calculate.');
       const doc = {
         application_number, name: name || (staff && staff.name) || '', month,
-        basic_pay, hra, pf_percent, pf_amount, gross_pay,
+        basic_pay, hra, pf_percent, esi_percent, pf_amount, esi_amount, gross_pay,
         amount: netPay, mode: mode || 'Bank Transfer', note: note || '', paid_on: nowIso(), created_at: nowIso()
       };
       const r = await db.collection('salary_payments').insertOne(doc);
       return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
+    }
+    // Bulk Bank Transfer File — one CSV ready to upload straight into the bank's Corporate
+    // Internet Banking bulk-salary portal (Recommended flow: ERP generates file → upload to
+    // bank → salary credited to every employee's own bank, even across different banks).
+    if (action === 'acc_bank_transfer_file' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const month = req.query.month;
+      if (!month) return err(res, 'Month is required.');
+      const payments = await db.collection('salary_payments').find({ month }).toArray();
+      const allStaff = await db.collection('staff').find({}).toArray();
+      const staffMap = {}; allStaff.forEach(s => { staffMap[s.application_number] = s; });
+      const rows = payments.map(p => {
+        const s = staffMap[p.application_number] || {};
+        return {
+          name: p.name || s.name || '', application_number: p.application_number,
+          bank_name: s.bank_name || '', branch: s.branch || '', account_number: s.account_number || '',
+          ifsc_code: s.ifsc_code || '', amount: p.amount || 0,
+          ready: !!(s.account_number && s.ifsc_code)
+        };
+      });
+      return ok(res, { data: rows, month });
+    }
+
+    // Helper — same attendance-based salary logic used by acc_attendance_salary_suggestion,
+    // reused here so Bulk Payroll and the Salary Register always agree with each other.
+    async function computeSalaryForStaff(staff, month) {
+      const records = await db.collection('staff_attendance').find({ application_number: staff.application_number, date: { $regex: '^' + month } }).toArray();
+      const daysInMonth = new Date(Number(month.split('-')[0]), Number(month.split('-')[1]), 0).getDate();
+      const absentDays = records.filter(r => r.status === 'absent').length;
+      const gross = (staff.basic_pay || 0) + (staff.hra || 0);
+      const perDay = gross / daysInMonth;
+      // No attendance marked at all yet → assume full month present (don't unfairly zero out salary).
+      const suggestedGross = records.length ? Math.round(perDay * (daysInMonth - absentDays)) : gross;
+      const pfAmount = Math.round(((staff.basic_pay || 0) * (staff.pf_percent || 0)) / 100);
+      const esiAmount = Math.round(((staff.basic_pay || 0) * (staff.esi_percent || 0)) / 100);
+      const net = Math.max(0, suggestedGross - pfAmount - esiAmount);
+      return { gross: suggestedGross, pf_amount: pfAmount, esi_amount: esiAmount, net, marked_days: records.length, absent_days: absentDays, days_in_month: daysInMonth };
+    }
+
+    // ── One-Click Bulk Payroll ── Generates (and records) this month's salary for every ACTIVE
+    // staff member who doesn't already have a payment recorded for that month — using attendance
+    // if it was marked, or full Basic+HRA if attendance wasn't marked yet. Existing payments for
+    // the month are left untouched (accountant can still edit/re-record any of them individually).
+    if (action === 'acc_bulk_generate_payroll' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const month = body.month;
+      if (!month) return err(res, 'Month is required.');
+      const allStaff = await db.collection('staff').find({ status: { $ne: 'blocked' }, $or: [{ status: { $exists: false } }, { status: { $ne: 'removed' } }] }).toArray();
+      const existing = await db.collection('staff_attendance').find({}).limit(0).toArray(); // no-op, keeps shape consistent
+      const existingPayments = await db.collection('salary_payments').find({ month }).toArray();
+      const alreadyPaidSet = new Set(existingPayments.map(p => p.application_number));
+
+      const results = [];
+      for (const staff of allStaff) {
+        if (alreadyPaidSet.has(staff.application_number)) {
+          results.push({ application_number: staff.application_number, name: staff.name, status: 'skipped', reason: 'Already recorded this month' });
+          continue;
+        }
+        const calc = await computeSalaryForStaff(staff, month);
+        const doc = {
+          application_number: staff.application_number, name: staff.name, month,
+          basic_pay: staff.basic_pay || 0, hra: staff.hra || 0, pf_percent: staff.pf_percent || 0,
+          esi_percent: staff.esi_percent || 0, pf_amount: calc.pf_amount, esi_amount: calc.esi_amount,
+          gross_pay: calc.gross, amount: calc.net, mode: 'Bank Transfer',
+          note: calc.marked_days ? 'Auto-generated from attendance (Bulk Payroll)' : 'Auto-generated — no attendance marked, full month assumed',
+          paid_on: nowIso(), created_at: nowIso()
+        };
+        await db.collection('salary_payments').insertOne(doc);
+        results.push({ application_number: staff.application_number, name: staff.name, status: 'generated', amount: calc.net });
+      }
+      return ok(res, { data: results, generated: results.filter(r => r.status === 'generated').length, skipped: results.filter(r => r.status === 'skipped').length });
+    }
+
+    // ── Salary Register — every staff member's salary for one month, in one consolidated table.
+    if (action === 'acc_salary_register' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const month = req.query.month;
+      if (!month) return err(res, 'Month is required.');
+      const allStaff = await db.collection('staff').find({}).toArray();
+      const payments = await db.collection('salary_payments').find({ month }).toArray();
+      const paidMap = {}; payments.forEach(p => { paidMap[p.application_number] = p; });
+      const rows = allStaff.map(s => {
+        const p = paidMap[s.application_number];
+        return {
+          name: s.name, application_number: s.application_number, position: s.position || '', department: s.department || '',
+          basic_pay: s.basic_pay || 0, hra: s.hra || 0,
+          pf_amount: p ? (p.pf_amount || 0) : Math.round(((s.basic_pay || 0) * (s.pf_percent || 0)) / 100),
+          esi_amount: p ? (p.esi_amount || 0) : Math.round(((s.basic_pay || 0) * (s.esi_percent || 0)) / 100),
+          net_paid: p ? p.amount : 0, status: p ? 'Paid' : 'Not Paid', mode: p ? p.mode : '-'
+        };
+      });
+      const totals = rows.reduce((acc, r) => {
+        acc.basic += r.basic_pay; acc.hra += r.hra; acc.pf += r.pf_amount; acc.esi += r.esi_amount; acc.net += r.net_paid;
+        return acc;
+      }, { basic: 0, hra: 0, pf: 0, esi: 0, net: 0 });
+      return ok(res, { data: rows, totals, month });
     }
 
     // PF Record — side-panel search across all employees, filterable by month / employee
@@ -1785,7 +1967,7 @@ app.get('/verify-id', async (req, res) => {
     let record = null;
     if (oid && type === 'staff') record = await db.collection('staff').findOne({ _id: oid });
     else if (oid && type === 'student') record = await db.collection('fee_students').findOne({ _id: oid });
-    else if (oid && type === 'marksheet') record = await db.collection('results').findOne({ _id: oid, category: 'academic' });
+    else if (oid && type === 'marksheet') record = await db.collection('results').findOne({ _id: oid });
     else if (oid && type === 'certificate') record = await db.collection('certificates').findOne({ _id: oid });
 
     if (!record) {
@@ -1802,6 +1984,19 @@ app.get('/verify-id', async (req, res) => {
           <tr><td>Type</td><td>${record.staff_type === 'non_teaching' ? 'Non-Teaching' : 'Teaching'}</td></tr>
           <tr><td>Designation</td><td>${escHtml(record.position || '-')}</td></tr>
           <tr><td>Department</td><td>${escHtml(record.department || '-')}</td></tr>
+        </table>
+      </div>`;
+    } else if (type === 'marksheet' && record.category === 'hiring') {
+      const letterLabel = record.letter_type === 'appointment' ? 'Appointment Letter' : (record.letter_type === 'offer' ? 'Offer Letter' : 'Selection Letter');
+      html = `<div class="vcard good">
+        <div class="vicon">&#128196;</div>
+        <h2>${escHtml(record.student_name)}</h2>
+        <div class="vbadge ok">&#9989; Genuine ICA ${escHtml(letterLabel)}</div>
+        <table class="vtbl">
+          <tr><td>Ref No.</td><td><b>${escHtml(record.ref_no || record.application_number || '-')}</b></td></tr>
+          <tr><td>Position</td><td>${escHtml(record.position || '-')}</td></tr>
+          <tr><td>Department</td><td>${escHtml(record.department || '-')}</td></tr>
+          <tr><td>Status</td><td>${escHtml(record.result_status || '-')}</td></tr>
         </table>
       </div>`;
     } else if (type === 'marksheet') {
