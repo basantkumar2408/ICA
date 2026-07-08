@@ -78,14 +78,33 @@ function computeAcademicResult(subjects) {
     const hasFA = s.fa1 !== undefined || s.fa2 !== undefined || s.fa3 !== undefined || s.endterm !== undefined;
     let marks, max, fa1 = 0, fa2 = 0, fa3 = 0, endterm = 0, fa1_max = 0, fa2_max = 0, fa3_max = 0, endterm_max = 0;
     if (hasFA) {
-      fa1 = Number(s.fa1) || 0; fa2 = Number(s.fa2) || 0; fa3 = Number(s.fa3) || 0; endterm = Number(s.endterm) || 0;
-      fa1_max = Number(s.fa1_max) || 10; fa2_max = Number(s.fa2_max) || 10; fa3_max = Number(s.fa3_max) || 10; endterm_max = Number(s.endterm_max) || 70;
-      marks = fa1 + fa2 + fa3 + endterm; max = fa1_max + fa2_max + fa3_max + endterm_max;
+      // Only count a term toward the total if it was ACTUALLY entered (not blank/undefined) —
+      // this is what fixes a student being wrongly marked "Fail" when only FA1 has happened
+      // so far: FA2/FA3/End Term aren't counted as zero until their marks are actually entered.
+      // Exams are meant to publish in sequence — FA1 first, then FA2, then FA3, then Final —
+      // and each publish should only judge the terms completed up to that point.
+      const enteredFa1 = s.fa1 !== undefined && s.fa1 !== '';
+      const enteredFa2 = s.fa2 !== undefined && s.fa2 !== '';
+      const enteredFa3 = s.fa3 !== undefined && s.fa3 !== '';
+      const enteredEndterm = s.endterm !== undefined && s.endterm !== '';
+      const fa1Val = enteredFa1 ? (Number(s.fa1) || 0) : 0;
+      const fa2Val = enteredFa2 ? (Number(s.fa2) || 0) : 0;
+      const fa3Val = enteredFa3 ? (Number(s.fa3) || 0) : 0;
+      const endtermVal = enteredEndterm ? (Number(s.endterm) || 0) : 0;
+      fa1_max = enteredFa1 ? (Number(s.fa1_max) || 10) : 0;
+      fa2_max = enteredFa2 ? (Number(s.fa2_max) || 10) : 0;
+      fa3_max = enteredFa3 ? (Number(s.fa3_max) || 10) : 0;
+      endterm_max = enteredEndterm ? (Number(s.endterm_max) || 70) : 0;
+      marks = fa1Val + fa2Val + fa3Val + endtermVal; max = fa1_max + fa2_max + fa3_max + endterm_max;
+      // Store '' (not 0) for a term that hasn't been entered yet, so re-opening this result for
+      // editing later still correctly shows it as blank/not-entered instead of a real zero score.
+      fa1 = enteredFa1 ? fa1Val : ''; fa2 = enteredFa2 ? fa2Val : ''; fa3 = enteredFa3 ? fa3Val : ''; endterm = enteredEndterm ? endtermVal : '';
     } else {
       marks = Number(s.marks) || 0; max = Number(s.max) || 100;
     }
     const pct = max ? (marks / max) * 100 : 0;
-    const status = pct < 33 ? 'Fail' : 'Pass';
+    // No marks entered for this subject at all yet → Pending, not Fail.
+    const status = !max ? 'Pending' : (pct < 33 ? 'Fail' : 'Pass');
     if (status === 'Fail') anyFail = true;
     totalObtained += marks; totalMax += max;
     return {
@@ -884,16 +903,18 @@ if (
       if (!staff) return err(res, 'Staff not found.');
       const records = await db.collection('staff_attendance').find({ application_number, date: { $regex: '^' + month } }).toArray();
       const daysInMonth = new Date(Number(month.split('-')[0]), Number(month.split('-')[1]), 0).getDate();
-      const presentDays = records.filter(r => r.status === 'present' || r.status === 'half_day' || r.status === 'leave').length;
+      const presentDays = records.filter(r => r.status === 'present' || r.status === 'leave').length;
+      const halfDays = records.filter(r => r.status === 'half_day').length;
       const absentDays = records.filter(r => r.status === 'absent').length;
+      const deductionDays = absentDays + (halfDays * 0.5);
       const gross = (staff.basic_pay || 0) + (staff.hra || 0);
       const perDay = gross / daysInMonth;
-      const suggested = Math.round(perDay * (daysInMonth - absentDays));
+      const suggested = Math.round(perDay * (daysInMonth - deductionDays));
       const pfAmount = Math.round(((staff.basic_pay || 0) * (staff.pf_percent || 0)) / 100);
       const esiAmount = Math.round(((staff.basic_pay || 0) * (staff.esi_percent || 0)) / 100);
       return ok(res, {
         data: {
-          days_in_month: daysInMonth, marked_days: records.length, present_days: presentDays, absent_days: absentDays,
+          days_in_month: daysInMonth, marked_days: records.length, present_days: presentDays, half_days: halfDays, absent_days: absentDays,
           per_day_rate: Math.round(perDay), gross_pay: gross, suggested_gross: suggested,
           pf_amount: pfAmount, esi_amount: esiAmount, suggested_net: Math.max(0, suggested - pfAmount - esiAmount)
         }
@@ -1612,6 +1633,35 @@ if (
     }
 
     // ── Expenses (school spending — salaries excluded, tracked separately below) ──
+    /* ═══════════ STAFF LOAN / ADVANCE ═══════════ */
+    if (action === 'acc_add_advance' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const { application_number, amount, date, reason, note } = body;
+      if (!application_number || !amount || !date) return err(res, 'Staff, Amount and Date are required.');
+      const staff = await db.collection('staff').findOne({ application_number });
+      const slipNo = 'ICA-ADV-' + String(date).slice(0, 4) + '-' + Date.now().toString().slice(-5);
+      const doc = {
+        application_number, staff_name: (staff && staff.name) || '', amount: Number(amount) || 0,
+        date, reason: reason || '', note: note || '', slip_no: slipNo, created_at: nowIso()
+      };
+      const r = await db.collection('staff_advances').insertOne(doc);
+      return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
+    }
+    if (action === 'acc_list_advances' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const filter = {};
+      if (req.query.application_number) filter.application_number = req.query.application_number;
+      if (req.query.month) filter.date = { $regex: '^' + req.query.month };
+      const data = await db.collection('staff_advances').find(filter).sort({ date: -1 }).toArray();
+      return ok(res, { data: mapDocs(data) });
+    }
+    if (action === 'acc_delete_advance' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const oid = toOid(body.id); if (!oid) return err(res, 'Missing id');
+      await db.collection('staff_advances').deleteOne({ _id: oid });
+      return ok(res, {});
+    }
+
     if (action === 'acc_add_expense' && req.method === 'POST') {
       if (!(await requireAccounts(req, res, db))) return;
       const { date, category, amount, paid_to, note } = body;
@@ -1828,10 +1878,12 @@ if (
       const records = await db.collection('staff_attendance').find({ application_number: staff.application_number, date: { $regex: '^' + month } }).toArray();
       const daysInMonth = new Date(Number(month.split('-')[0]), Number(month.split('-')[1]), 0).getDate();
       const absentDays = records.filter(r => r.status === 'absent').length;
+      const halfDays = records.filter(r => r.status === 'half_day').length;
+      const deductionDays = absentDays + (halfDays * 0.5);
       const gross = (staff.basic_pay || 0) + (staff.hra || 0);
       const perDay = gross / daysInMonth;
       // No attendance marked at all yet → assume full month present (don't unfairly zero out salary).
-      const suggestedGross = records.length ? Math.round(perDay * (daysInMonth - absentDays)) : gross;
+      const suggestedGross = records.length ? Math.round(perDay * (daysInMonth - deductionDays)) : gross;
       const pfAmount = Math.round(((staff.basic_pay || 0) * (staff.pf_percent || 0)) / 100);
       const esiAmount = Math.round(((staff.basic_pay || 0) * (staff.esi_percent || 0)) / 100);
       const net = Math.max(0, suggestedGross - pfAmount - esiAmount);
@@ -1916,6 +1968,57 @@ if (
       return ok(res, {});
     }
 
+    /* ═══════════ PF SCHOOL (EMPLOYER) CONTRIBUTION ═══════════
+       The employee's own PF is already deducted from their salary (pf_amount on the salary
+       payment). This adds the SCHOOL's matching share into a separate ledger, each with its
+       own unique transaction number — exactly like a real EPFO employer contribution entry. */
+    async function makeSchoolPfContribution(db, application_number, month) {
+      const staff = await db.collection('staff').findOne({ application_number });
+      if (!staff) throw new Error('Staff not found: ' + application_number);
+      const payment = await db.collection('salary_payments').findOne({ application_number, month });
+      if (!payment || !payment.pf_amount) throw new Error('No PF deduction recorded for this staff in ' + month + ' — record their salary payment first.');
+      const existing = await db.collection('pf_school_contributions').findOne({ application_number, month });
+      if (existing) return { skipped: true, name: staff.name, reason: 'School contribution already recorded for this month' };
+      const txnNo = 'PF-TXN-' + month.replace('-', '') + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+      const doc = {
+        application_number, staff_name: staff.name, month,
+        employee_pf_amount: payment.pf_amount, employer_pf_amount: payment.pf_amount,
+        transaction_no: txnNo, created_at: nowIso()
+      };
+      await db.collection('pf_school_contributions').insertOne(doc);
+      return { skipped: false, name: staff.name, amount: payment.pf_amount, transaction_no: txnNo };
+    }
+    if (action === 'acc_add_school_pf_contribution' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const { application_number, month } = body;
+      if (!application_number || !month) return err(res, 'Staff and month are required.');
+      try {
+        const result = await makeSchoolPfContribution(db, application_number, month);
+        return ok(res, { data: result });
+      } catch (e) { return err(res, e.message); }
+    }
+    if (action === 'acc_bulk_school_pf_contribution' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const { month } = body;
+      if (!month) return err(res, 'Month is required.');
+      const payments = await db.collection('salary_payments').find({ month, pf_amount: { $gt: 0 } }).toArray();
+      const results = [];
+      for (const p of payments) {
+        try { results.push(await makeSchoolPfContribution(db, p.application_number, month)); }
+        catch (e) { results.push({ skipped: true, name: p.name, reason: e.message }); }
+      }
+      return ok(res, { data: results, generated: results.filter(r => !r.skipped).length, skipped: results.filter(r => r.skipped).length });
+    }
+    if (action === 'acc_list_school_pf_contributions' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const filter = {};
+      if (req.query.month) filter.month = req.query.month;
+      if (req.query.application_number) filter.application_number = req.query.application_number;
+      const data = await db.collection('pf_school_contributions').find(filter).sort({ month: -1 }).toArray();
+      const total = data.reduce((s, r) => s + (r.employer_pf_amount || 0), 0);
+      return ok(res, { data: mapDocs(data), total });
+    }
+
     // Salary slip for one month OR a range (e.g. 6-month / 12-month slip)
     if (action === 'acc_salary_slip' && req.method === 'GET') {
       if (!(await requireAccounts(req, res, db))) return;
@@ -1969,6 +2072,7 @@ app.get('/verify-id', async (req, res) => {
     else if (oid && type === 'student') record = await db.collection('fee_students').findOne({ _id: oid });
     else if (oid && type === 'marksheet') record = await db.collection('results').findOne({ _id: oid });
     else if (oid && type === 'certificate') record = await db.collection('certificates').findOne({ _id: oid });
+    else if (oid && type === 'admission') record = await db.collection('admissions').findOne({ _id: oid });
 
     if (!record) {
       html = `<div class="vcard bad"><div class="vicon">&#10060;</div><h2>Invalid ID Card</h2><p>This QR code does not match any active record. If you believe this is an error, please contact the school office.</p></div>`;
@@ -2025,6 +2129,18 @@ app.get('/verify-id', async (req, res) => {
           ${record.applying_class ? `<tr><td>Class</td><td>${escHtml(record.applying_class)}${record.section ? (' - ' + escHtml(record.section)) : ''}</td></tr>` : ''}
           ${record.position ? `<tr><td>Designation</td><td>${escHtml(record.position)}</td></tr>` : ''}
           <tr><td>Issued On</td><td>${escHtml(new Date(record.created_at).toLocaleDateString('en-IN'))}</td></tr>
+        </table>
+      </div>`;
+    } else if (type === 'admission') {
+      html = `<div class="vcard good">
+        ${record.photo_file_url ? `<img class="vphoto" src="${escHtml(record.photo_file_url)}"/>` : '<div class="vphoto vnoimg">No Photo</div>'}
+        <h2>${escHtml(record.student_name)}</h2>
+        <div class="vbadge ok">&#9989; Genuine ICA Admission Record</div>
+        <table class="vtbl">
+          <tr><td>Application No.</td><td><b>${escHtml(record.application_number)}</b></td></tr>
+          <tr><td>Class</td><td>${escHtml(record.applying_class || '-')}</td></tr>
+          <tr><td>Status</td><td>${escHtml(record.status || '-')}</td></tr>
+          <tr><td>Academic Year</td><td>${escHtml(record.academic_year || '-')}</td></tr>
         </table>
       </div>`;
     } else {

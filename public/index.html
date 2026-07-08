@@ -164,7 +164,7 @@ nav.scrolled{top:0;box-shadow:0 4px 20px rgba(0,0,0,.15);}
 .hero-visual-glow{position:absolute;inset:0;background:radial-gradient(circle at 60% 30%,rgba(250,204,21,.18),transparent 60%);border-radius:var(--rxl);pointer-events:none;z-index:1;}
 .hero-building-img{width:100%;height:100%;min-height:380px;object-fit:cover;position:relative;}
 .hero-building-placeholder{width:100%;height:380px;background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.03));display:flex;align-items:center;justify-content:center;font-size:80px;position:relative;}
-.hero-students-img{position:absolute;bottom:16px;left:16px;width:130px;height:130px;object-fit:cover;border-radius:14px;border:4px solid var(--white);box-shadow:0 12px 30px rgba(0,0,0,.35);z-index:2;}
+.hero-students-img{position:absolute;top:16px;right:16px;width:120px;height:120px;object-fit:cover;border-radius:14px;border:4px solid var(--white);box-shadow:0 12px 30px rgba(0,0,0,.4);z-index:2;transform:rotate(3deg);}
 .hc-avatar{width:72px;height:72px;background:linear-gradient(135deg,var(--pub-accent),#fde047);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 14px;}
 .hc-name{font-family:"Poppins",sans-serif;font-size:17px;color:var(--white);text-align:center;}
 .hc-title{font-size:11.5px;color:var(--gold-light);text-align:center;letter-spacing:.05em;margin-bottom:20px;margin-top:3px;}
@@ -1062,6 +1062,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       <div class="sb-item" id="nav-tc" onclick="showPanel('tc')"><span class="sb-icon">&#128196;</span>Transfer Certificate</div>
       <div class="sb-item" id="nav-character" onclick="showPanel('character')"><span class="sb-icon">&#128221;</span>Character Certificate</div>
       <div class="sb-item" id="nav-experience" onclick="showPanel('experience')"><span class="sb-icon">&#128188;</span>Experience Letter</div>
+      <div class="sb-item" id="nav-allcerts" onclick="showPanel('allcerts')"><span class="sb-icon">&#128193;</span>All Certificates</div>
       <div class="sb-sec">Website</div>
       <div class="sb-item" id="nav-chatbot" onclick="showPanel('chatbot')"><span class="sb-icon">&#128172;</span>Chatbot FAQs</div>
       <div class="sb-sec">Settings</div>
@@ -1353,8 +1354,8 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
             <div class="fg" style="max-width:220px;align-self:flex-end;"><button class="btn-vw" onclick="markAllAttendance('present')">Mark All Present</button></div>
           </div>
           <div class="tbl-wrap"><table class="tbl">
-            <thead><tr><th>Student</th><th>App No.</th><th>Present</th><th>Absent</th><th>Leave</th></tr></thead>
-            <tbody id="att-sheet-body"><tr><td colspan="5" class="no-data">Select a class and date.</td></tr></tbody>
+            <thead><tr><th>Student</th><th>App No.</th><th>Present</th><th>Half Day</th><th>Absent</th><th>Leave</th></tr></thead>
+            <tbody id="att-sheet-body"><tr><td colspan="6" class="no-data">Select a class and date.</td></tr></tbody>
           </table></div>
           <button class="btn-add" onclick="saveAttendanceSheet()">Save Attendance</button>
         </div>
@@ -1476,6 +1477,25 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       </div>
 
       <!-- CHATBOT FAQs -->
+      <!-- ALL CERTIFICATES -->
+      <div class="admin-panel" id="panel-allcerts">
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title">All Issued Certificates</div>
+            <select class="fi" id="allcerts-filter" onchange="loadAllCertificates()">
+              <option value="">All Types</option>
+              <option value="tc">Transfer Certificate</option>
+              <option value="character">Character Certificate</option>
+              <option value="experience">Experience Letter</option>
+            </select>
+          </div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Type</th><th>Name</th><th>Cert / Ref No.</th><th>Issued</th><th>Actions</th></tr></thead>
+            <tbody id="allcerts-body"><tr><td colspan="5" class="no-data">Loading...</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
       <div class="admin-panel" id="panel-chatbot">
         <div class="acard">
           <div class="acard-head"><div class="acard-title">Add / Edit a FAQ</div></div>
@@ -1672,6 +1692,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       <div class="sb-sec">Admissions</div>
       <div class="sb-item" id="accnav-receipt" onclick="showAccPanel('receipt')"><span class="sb-icon">&#129534;</span>Search Receipt</div>
       <div class="sb-sec">Reports</div>
+      <div class="sb-item" id="accnav-advance" onclick="showAccPanel('advance')"><span class="sb-icon">&#128181;</span>Staff Loan / Advance</div>
       <div class="sb-item" id="accnav-attendance" onclick="showAccPanel('attendance')"><span class="sb-icon">&#9989;</span>Staff Attendance</div>
       <div class="sb-item" id="accnav-duesentry" onclick="showAccPanel('duesentry')"><span class="sb-icon">&#128221;</span>Previous Dues Entry</div>
       <div class="sb-item" id="accnav-expenses" onclick="showAccPanel('expenses')"><span class="sb-icon">&#128184;</span>Expenses</div>
@@ -1809,15 +1830,22 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
 
       <div class="admin-panel" id="accpanel-pfrecord">
         <div class="acard">
-          <div class="acard-head"><div class="acard-title">PF Record</div></div>
-          <p style="font-size:11.5px;color:var(--muted);margin-bottom:12px;">See how much Provident Fund has been deducted for every employee, filterable by month and by staff member.</p>
+          <div class="acard-head"><div class="acard-title">PF Record (Employee Deduction)</div></div>
+          <p style="font-size:11.5px;color:var(--muted);margin-bottom:12px;">See how much Provident Fund has been deducted for every employee, filterable by month and by staff member. Use "Add School Contribution" to record the school's matching share for any month.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
             <select class="fi" id="pf-staff-filter" style="min-width:200px;" onchange="loadPFRecords()"><option value="">All Staff</option></select>
             <input type="month" id="pf-month-filter" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;" onchange="loadPFRecords()"/>
             <button class="btn-vw" onclick="document.getElementById('pf-staff-filter').value='';document.getElementById('pf-month-filter').value='';loadPFRecords();">Clear Filters</button>
+            <button class="btn-add" style="background:#166534;" onclick="bulkSchoolPfContribution()">&#9889; Add School Contribution for All (Selected Month)</button>
           </div>
           <div style="font-size:13px;font-weight:700;margin-bottom:8px;" id="pf-total-label">Total PF: Rs. 0</div>
-          <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Employee</th><th>App. No.</th><th>Month</th><th>Basic Pay</th><th>PF %</th><th>PF Amount</th></tr></thead><tbody id="pf-records-body"><tr><td colspan="7" class="no-data">Loading...</td></tr></tbody></table></div>
+          <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Employee</th><th>App. No.</th><th>Month</th><th>Basic Pay</th><th>PF %</th><th>PF Amount</th><th></th></tr></thead><tbody id="pf-records-body"><tr><td colspan="8" class="no-data">Loading...</td></tr></tbody></table></div>
+        </div>
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">School (Employer) Contribution Ledger</div></div>
+          <p style="font-size:11.5px;color:var(--muted);margin-bottom:12px;">Each entry is a unique transaction — the school's matching PF share, equal to what was deducted from the employee.</p>
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px;" id="pf-school-total-label">Total School Contribution: Rs. 0</div>
+          <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Transaction No.</th><th>Employee</th><th>Month</th><th>Employee PF</th><th>School PF</th></tr></thead><tbody id="pf-school-body"><tr><td colspan="5" class="no-data">Loading...</td></tr></tbody></table></div>
         </div>
       </div>
 
@@ -1835,6 +1863,37 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
 
       <!-- PREVIOUS DUES ENTRY -->
       <!-- STAFF ATTENDANCE -->
+      <!-- STAFF LOAN / ADVANCE -->
+      <div class="admin-panel" id="accpanel-advance">
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Record a Loan / Advance Payment</div></div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg" style="max-width:240px;"><label>Staff</label><select id="adv-staff"><option value="">Select staff...</option></select></div>
+            <div class="fg" style="max-width:160px;"><label>Date</label><input type="date" id="adv-date" value="${new Date().toISOString().slice(0,10)}"/></div>
+            <div class="fg" style="max-width:160px;"><label>Amount (Rs.)</label><input type="number" id="adv-amount"/></div>
+          </div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg"><label>Reason</label><input type="text" id="adv-reason" placeholder="e.g. Medical emergency, festival advance"/></div>
+            <div class="fg"><label>Note</label><input type="text" id="adv-note"/></div>
+          </div>
+          <button class="btn-add" onclick="saveAdvance()">Save &amp; Generate Slip</button>
+        </div>
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title">All Loan / Advance Records</div>
+            <div style="display:flex;gap:8px;">
+              <input type="month" id="adv-filter-month" onchange="loadAdvances()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;"/>
+              <button class="btn-excel" onclick="exportAdvancesCSV()">Download Excel</button>
+            </div>
+          </div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Slip No.</th><th>Staff</th><th>Date</th><th>Amount</th><th>Reason</th><th></th></tr></thead>
+            <tbody id="advances-body"><tr><td colspan="6" class="no-data">Loading...</td></tr></tbody>
+          </table></div>
+          <div id="advances-summary" style="margin-top:12px;font-size:13px;font-weight:700;color:var(--navy);"></div>
+        </div>
+      </div>
+
       <div class="admin-panel" id="accpanel-attendance">
         <div class="acard">
           <div class="acard-head"><div class="acard-title">Mark Staff Attendance</div></div>
@@ -1843,8 +1902,8 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
             <div class="fg" style="max-width:220px;align-self:flex-end;"><button class="btn-vw" onclick="markAllStaffAttendance('present')">Mark All Present</button></div>
           </div>
           <div class="tbl-wrap"><table class="tbl">
-            <thead><tr><th>Staff</th><th>Type</th><th>Present</th><th>Absent</th><th>Leave</th></tr></thead>
-            <tbody id="sat-sheet-body"><tr><td colspan="5" class="no-data">Select a date.</td></tr></tbody>
+            <thead><tr><th>Staff</th><th>Type</th><th>Present</th><th>Half Day</th><th>Absent</th><th>Leave</th></tr></thead>
+            <tbody id="sat-sheet-body"><tr><td colspan="6" class="no-data">Select a date.</td></tr></tbody>
           </table></div>
           <button class="btn-add" onclick="saveStaffAttendanceSheet()">Save Attendance</button>
         </div>
@@ -2134,7 +2193,7 @@ async function doLogin(){
 }
 
 function doLogout(auto){endSession();document.getElementById('adminOverlay').classList.remove('show');toast(auto?'Auto-logged out due to inactivity.':'Logged out.');}
-const TITLES={dashboard:'Dashboard',admissions:'Admission Applications',enquiries:'Parent Enquiries',notices:'Notices',gallery:'Gallery',testimonials:'Testimonials',formbuilder:'Admission Form Builder',customforms:'Custom Forms',results:'Examination',hiring:'Hiring / Recruitment',duty:'Staff Duty Roster',attendance:'Student Attendance',staffid:'Staff ID Cards',studentid:'Student ID Cards',tc:'Transfer Certificate',character:'Character Certificate',experience:'Experience Letter',chatbot:'Chatbot FAQs',sitesettings:'Site Settings',password:'Change Password'};
+const TITLES={dashboard:'Dashboard',admissions:'Admission Applications',enquiries:'Parent Enquiries',notices:'Notices',gallery:'Gallery',testimonials:'Testimonials',formbuilder:'Admission Form Builder',customforms:'Custom Forms',results:'Examination',hiring:'Hiring / Recruitment',duty:'Staff Duty Roster',attendance:'Student Attendance',staffid:'Staff ID Cards',studentid:'Student ID Cards',tc:'Transfer Certificate',character:'Character Certificate',experience:'Experience Letter',allcerts:'All Certificates',chatbot:'Chatbot FAQs',sitesettings:'Site Settings',password:'Change Password'};
 
 /* ═══════════════ ACCOUNTS PANEL (Fees, Invoices, Staff Salary) ═══════════════ */
 async function accGet(action, params){
@@ -2212,7 +2271,7 @@ function openAccountsPanel(){
   showAccPanel('dashboard');
 }
 
-const ACC_TITLES={dashboard:'Fee Dashboard',classfees:'Class Fee Structure',feestudents:'Student Fees & Invoices',staff:'Staff',salary:'Salary Payments',slip:'Salary Slip Generator',pfrecord:'PF Record',receipt:'Search Admission Receipt',duesentry:'Previous Dues Entry',expenses:'Expenses',summary:'Financial Summary',attendance:'Staff Attendance'};
+const ACC_TITLES={dashboard:'Fee Dashboard',classfees:'Class Fee Structure',feestudents:'Student Fees & Invoices',staff:'Staff',salary:'Salary Payments',slip:'Salary Slip Generator',pfrecord:'PF Record',receipt:'Search Admission Receipt',duesentry:'Previous Dues Entry',expenses:'Expenses',summary:'Financial Summary',attendance:'Staff Attendance',advance:'Staff Loan / Advance'};
 async function showAccPanel(id){
   document.querySelectorAll('#accountsOverlay .admin-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('#accountsOverlay .sb-item').forEach(a=>a.classList.remove('active'));
@@ -2230,6 +2289,7 @@ async function showAccPanel(id){
   if(id==='expenses') await loadExpenses();
   if(id==='summary') await loadFinancialSummary();
   if(id==='attendance') await initStaffAttendancePanel();
+  if(id==='advance') await initAdvancePanel();
 }
 
 const CLASS_LIST=['Nursery','LKG','UKG','Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'];
@@ -2677,15 +2737,48 @@ async function loadPFRecords(){
   const body=document.getElementById('pf-records-body');
   const appNo=(document.getElementById('pf-staff-filter')||{value:''}).value;
   const month=(document.getElementById('pf-month-filter')||{value:''}).value;
-  body.innerHTML='<tr><td colspan="7" class="no-data">Loading...</td></tr>';
+  body.innerHTML='<tr><td colspan="8" class="no-data">Loading...</td></tr>';
   try{
     const params={}; if(appNo)params.application_number=appNo; if(month)params.month=month;
     const r = await accGet('acc_pf_records', params);
     const list=r.data||[];
     document.getElementById('pf-total-label').textContent='Total PF: Rs. '+(r.total_pf||0).toLocaleString('en-IN');
-    body.innerHTML = list.length ? list.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${esc(p.application_number)}</td><td>${esc(p.month)}</td><td>Rs. ${(p.basic_pay||0).toLocaleString('en-IN')}</td><td>${p.pf_percent||0}%</td><td style="font-weight:700;color:#0a1628;">Rs. ${(p.pf_amount||0).toLocaleString('en-IN')}</td></tr>`).join('')
-      : '<tr><td colspan="7" class="no-data">No PF deductions found for this filter.</td></tr>';
-  }catch(e){ body.innerHTML='<tr><td colspan="7" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+    body.innerHTML = list.length ? list.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${esc(p.application_number)}</td><td>${esc(p.month)}</td><td>Rs. ${(p.basic_pay||0).toLocaleString('en-IN')}</td><td>${p.pf_percent||0}%</td><td style="font-weight:700;color:#0a1628;">Rs. ${(p.pf_amount||0).toLocaleString('en-IN')}</td><td><button class="btn-vw" onclick="addSchoolPfContribution('${esc(p.application_number)}','${esc(p.month)}')">Add School Contribution</button></td></tr>`).join('')
+      : '<tr><td colspan="8" class="no-data">No PF deductions found for this filter.</td></tr>';
+  }catch(e){ body.innerHTML='<tr><td colspan="8" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+  await loadSchoolPfLedger(month);
+}
+async function addSchoolPfContribution(application_number, month){
+  showLoading('Recording school contribution...');
+  try{
+    const r=await adm2('acc_add_school_pf_contribution',{application_number, month});
+    hideLoading();
+    if(r.data.skipped){ toast(r.data.reason); } else { toast('School contribution recorded! Transaction No: '+r.data.transaction_no); }
+    loadSchoolPfLedger(document.getElementById('pf-month-filter').value);
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function bulkSchoolPfContribution(){
+  const month=document.getElementById('pf-month-filter').value;
+  if(!month){ toast('Select a month in the filter above first.'); return; }
+  if(!confirm('Record school PF contribution for ALL staff with a PF deduction in '+month+'?')) return;
+  showLoading('Processing...');
+  try{
+    const r=await adm2('acc_bulk_school_pf_contribution',{month});
+    hideLoading();
+    toast('Done! '+r.generated+' recorded, '+r.skipped+' skipped (already done or no PF).');
+    loadSchoolPfLedger(month);
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function loadSchoolPfLedger(month){
+  const body=document.getElementById('pf-school-body');
+  body.innerHTML='<tr><td colspan="5" class="no-data">Loading...</td></tr>';
+  try{
+    const r=await accGet('acc_list_school_pf_contributions', month?{month}:{});
+    const list=r.data||[];
+    document.getElementById('pf-school-total-label').textContent='Total School Contribution: Rs. '+(r.total||0).toLocaleString('en-IN');
+    body.innerHTML = list.length ? list.map(x=>`<tr><td style="font-family:monospace;font-size:11.5px;">${esc(x.transaction_no)}</td><td>${esc(x.staff_name)}</td><td>${esc(x.month)}</td><td>Rs. ${x.employee_pf_amount.toLocaleString('en-IN')}</td><td style="font-weight:700;color:#16a34a;">Rs. ${x.employer_pf_amount.toLocaleString('en-IN')}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="no-data">No school contributions recorded yet.</td></tr>';
+  }catch(e){ body.innerHTML='<tr><td colspan="5" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
 }
 
 // ── Admission Receipt Search ──
@@ -2848,6 +2941,94 @@ function downloadCSV(csv, filename){
 let _fsRowsCache=[];
 /* ═══════════════ STAFF ATTENDANCE ═══════════════ */
 let _satStaff=[];
+/* ═══════════════ STAFF LOAN / ADVANCE ═══════════════ */
+let _advancesCache=[];
+async function initAdvancePanel(){
+  const sel=document.getElementById('adv-staff');
+  try{
+    const r=await accGet('acc_list_staff',{});
+    const list=(r.data||[]).filter(s=>(s.status||'active')==='active');
+    sel.innerHTML='<option value="">Select staff...</option>'+list.map(s=>`<option value="${esc(s.application_number)}">${esc(s.name)} (${esc(s.staff_id||s.application_number)})</option>`).join('');
+  }catch(e){}
+  document.getElementById('adv-filter-month').value='';
+  await loadAdvances();
+}
+async function saveAdvance(){
+  const application_number=document.getElementById('adv-staff').value;
+  const date=document.getElementById('adv-date').value;
+  const amount=document.getElementById('adv-amount').value;
+  const reason=document.getElementById('adv-reason').value.trim();
+  const note=document.getElementById('adv-note').value.trim();
+  if(!application_number||!date||!amount){ toast('Select staff, date and amount.'); return; }
+  showLoading('Saving...');
+  try{
+    const r=await adm2('acc_add_advance',{application_number,date,amount,reason,note});
+    hideLoading(); toast('Advance recorded! Opening printable slip...');
+    printAdvanceSlip(r.data);
+    document.getElementById('adv-amount').value='';document.getElementById('adv-reason').value='';document.getElementById('adv-note').value='';
+    loadAdvances();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+function printAdvanceSlip(a){
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>Advance Slip</title><style>
+    body{font-family:Arial,sans-serif;padding:40px;max-width:560px;margin:auto;}
+    h2{text-align:center;color:#0a1628;margin-bottom:4px;}
+    p.sub{text-align:center;color:#666;font-size:12px;margin-top:0;margin-bottom:24px;}
+    table{width:100%;border-collapse:collapse;margin-top:16px;}
+    td{padding:9px 6px;border-bottom:1px solid #eee;font-size:14px;}
+    td:first-child{color:#666;width:40%;}
+  </style></head><body>
+    <h2>IDEAL CHILDREN ACADEMY</h2>
+    <p class="sub">Staff Loan / Advance Payment Slip</p>
+    <table>
+      <tr><td>Slip No.</td><td><b>${esc(a.slip_no)}</b></td></tr>
+      <tr><td>Staff Name</td><td>${esc(a.staff_name)}</td></tr>
+      <tr><td>Date</td><td>${new Date(a.date).toLocaleDateString('en-IN')}</td></tr>
+      <tr><td>Amount</td><td><b>Rs. ${a.amount.toLocaleString('en-IN')}</b></td></tr>
+      <tr><td>Reason</td><td>${esc(a.reason||'-')}</td></tr>
+      ${a.note?`<tr><td>Note</td><td>${esc(a.note)}</td></tr>`:''}
+    </table>
+    <div style="display:flex;justify-content:space-between;margin-top:70px;">
+      <div style="text-align:center;"><div style="border-top:1px solid #333;width:140px;padding-top:4px;font-size:11px;">Staff Signature</div></div>
+      <div style="text-align:center;"><div style="border-top:1px solid #333;width:140px;padding-top:4px;font-size:11px;">Accountant Signature</div></div>
+    </div>
+    <div style="text-align:center;margin-top:24px;"><button onclick="window.print()" style="padding:10px 24px;background:#0a1628;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print</button></div>
+  </body></html>`);
+  w.document.close(); w.focus();
+}
+async function loadAdvances(){
+  const body=document.getElementById('advances-body');
+  const month=document.getElementById('adv-filter-month').value;
+  body.innerHTML='<tr><td colspan="6" class="no-data">Loading...</td></tr>';
+  try{
+    const r=await accGet('acc_list_advances', month?{month}:{});
+    _advancesCache=r.data||[];
+    if(!_advancesCache.length){ body.innerHTML='<tr><td colspan="6" class="no-data">No advances recorded yet.</td></tr>'; document.getElementById('advances-summary').textContent=''; return; }
+    body.innerHTML=_advancesCache.map(a=>`<tr>
+      <td>${esc(a.slip_no)}</td><td>${esc(a.staff_name)}</td><td>${new Date(a.date).toLocaleDateString('en-IN')}</td>
+      <td>Rs. ${a.amount.toLocaleString('en-IN')}</td><td>${esc(a.reason||'-')}</td>
+      <td class="tbl-actions"><button class="btn-vw" onclick='printAdvanceSlip(${JSON.stringify(a).replace(/'/g,"&apos;")})'>Print</button><button class="btn-del" onclick="deleteAdvance('${a.id}')">Delete</button></td>
+    </tr>`).join('');
+    // Per-staff totals summary
+    const byStaff={};
+    _advancesCache.forEach(a=>{ byStaff[a.staff_name]=(byStaff[a.staff_name]||0)+a.amount; });
+    const totalAll=_advancesCache.reduce((s,a)=>s+a.amount,0);
+    document.getElementById('advances-summary').innerHTML = `Total: Rs. ${totalAll.toLocaleString('en-IN')} across ${_advancesCache.length} advance(s) &nbsp;|&nbsp; ` +
+      Object.entries(byStaff).map(([name,amt])=>`${esc(name)}: Rs.${amt.toLocaleString('en-IN')}`).join(' &middot; ');
+  }catch(e){ body.innerHTML='<tr><td colspan="6" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+async function deleteAdvance(id){
+  if(!confirm('Delete this advance record?')) return;
+  try{ await adm2('acc_delete_advance',{id}); toast('Deleted.'); loadAdvances(); }catch(e){ toast('Error: '+e.message); }
+}
+function exportAdvancesCSV(){
+  if(!_advancesCache.length){ toast('No advances to export.'); return; }
+  let csv='Slip No,Staff Name,Date,Amount,Reason,Note\n';
+  _advancesCache.forEach(a=>{ csv+=`${a.slip_no},"${a.staff_name.replace(/"/g,'""')}",${a.date},${a.amount},"${(a.reason||'').replace(/"/g,'""')}","${(a.note||'').replace(/"/g,'""')}"\n`; });
+  downloadCSV(csv,'staff-advances.csv');
+}
+
 async function initStaffAttendancePanel(){
   document.getElementById('sat-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('sat-report-month').value = new Date().toISOString().slice(0,7);
@@ -2869,11 +3050,12 @@ async function loadStaffAttendanceSheet(){
       return `<tr>
         <td>${esc(s.name)}</td><td>${s.staff_type==='non_teaching'?'Non-Teaching':'Teaching'}</td>
         <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="present" ${st==='present'?'checked':''}/></td>
+        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="half_day" ${st==='half_day'?'checked':''}/></td>
         <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="absent" ${st==='absent'?'checked':''}/></td>
         <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="leave" ${st==='leave'?'checked':''}/></td>
       </tr>`;
     }).join('');
-  }catch(e){ body.innerHTML='<tr><td colspan="5" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+  }catch(e){ body.innerHTML='<tr><td colspan="6" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
 }
 function markAllStaffAttendance(status){
   _satStaff.forEach(s=>{
@@ -2909,17 +3091,18 @@ async function loadStaffAttendanceReport(){
     for(const s of staffList){
       const mine=records.filter(x=>x.application_number===s.application_number);
       const present=mine.filter(x=>x.status==='present').length;
+      const halfDay=mine.filter(x=>x.status==='half_day').length;
       const absent=mine.filter(x=>x.status==='absent').length;
       const leave=mine.filter(x=>x.status==='leave').length;
       const total=mine.length||1;
-      const pct=Math.round((present/total)*100);
+      const pct=Math.round(((present+halfDay*0.5)/total)*100);
       let suggestedNet='-';
       try{ const sug=await accGet('acc_attendance_salary_suggestion',{application_number:s.application_number, month}); suggestedNet='Rs. '+sug.data.suggested_net.toLocaleString('en-IN'); }catch(e){}
-      _satReportRows.push({name:s.name, application_number:s.application_number, present, absent, leave, pct, suggestedNet});
+      _satReportRows.push({name:s.name, application_number:s.application_number, present, halfDay, absent, leave, pct, suggestedNet});
     }
     if(!_satReportRows.length){ body.innerHTML='<tr><td colspan="6" class="no-data">No staff found.</td></tr>'; return; }
     body.innerHTML=_satReportRows.map(row=>`<tr>
-      <td>${esc(row.name)}</td><td>${row.present}</td><td>${row.absent}</td><td>${row.leave}</td>
+      <td>${esc(row.name)}</td><td>${row.present} ${row.halfDay?('+ '+row.halfDay+' half'):''}</td><td>${row.absent}</td><td>${row.leave}</td>
       <td style="font-weight:700;color:${row.pct>=75?'#16a34a':'#dc2626'};">${row.pct}%</td>
       <td>${esc(row.suggestedNet)}</td>
     </tr>`).join('');
@@ -3083,6 +3266,7 @@ async function showPanel(id){
   if(id==='tc'){_certSearchResults=[];_certSelected={};renderCertSearchResults('tc');}
   if(id==='character'){_certSearchResults=[];_certSelected={};renderCertSearchResults('character');}
   if(id==='experience'){_certSearchResults=[];_certSelected={};renderCertSearchResults('experience');}
+  if(id==='allcerts')await loadAllCertificates();
   if(id==='chatbot')await loadChatbotFaqsAdmin();
   if(id==='sitesettings')await loadSiteSettings();
 }
@@ -3463,13 +3647,27 @@ function viewDocs(id){
 async function printSlip(id){
   const a=_adms.find(x=>x.id==id);if(!a)return;
   if(a.status!=='Confirmed'){ if(!confirm('This application is not yet Confirmed. Print slip anyway?')) return; }
+  // Ask before printing whether to include the Accountant/HR signature — avoids the signature
+  // block overlapping the stamp when no real signature image has been uploaded yet.
+  document.getElementById('modal-title').textContent='Print Admission Slip';
+  document.getElementById('modal-body').innerHTML=`
+    <div class="mdi full">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:600;"><input type="checkbox" id="slip-inc-acc-sign" style="width:auto;"/> Include Accountant / HR Signature on the slip</label>
+      <p style="font-size:11px;color:var(--muted);margin-top:6px;">Only tick this once a real Accountant/HR signature has been uploaded under Site Settings — otherwise leave it unticked to avoid a blank/overlapping signature box.</p>
+    </div>`;
+  document.getElementById('modal-btns').innerHTML=`<button class="btn-add" onclick="closeModal();doPrintSlip('${id}', document.getElementById('slip-inc-acc-sign').checked)">Generate &amp; Print</button>`;
+  document.getElementById('modalBg').classList.add('show');
+}
+async function doPrintSlip(id, includeAccSign){
+  const a=_adms.find(x=>x.id==id);if(!a)return;
   let s = _siteSettingsCache;
   if(!s || !Object.keys(s).length){ try{ const sr=await api('get_settings'); s=sr.data||{}; _siteSettingsCache=s; }catch(e){ s={}; } }
   const appNo=a.application_number||('ICA-'+String(a.id).slice(0,8).toUpperCase());
   const photoHtml = a.photo_file_url ? '<img src="'+a.photo_file_url+'" style="width:100px;height:120px;object-fit:cover;border:2px solid #0a1628;border-radius:6px;"/>' : '<div style="width:100px;height:120px;border:2px dashed #999;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;text-align:center;">No Photo</div>';
-  const stampHtml = s.school_stamp_url ? '<img src="'+esc(s.school_stamp_url)+'" style="width:90px;opacity:.9;position:absolute;right:70px;bottom:56px;transform:rotate(-8deg);"/>' : '';
-  const sigOfficeHtml = s.sig_office_url ? '<img src="'+esc(s.sig_office_url)+'" style="height:38px;display:block;margin:0 auto 2px;"/>' : '';
-  const sigPrincipalHtml = s.sig_principal_url ? '<img src="'+esc(s.sig_principal_url)+'" style="height:38px;display:block;margin:0 auto 2px;"/>' : '';
+  const stampHtml = s.school_stamp_url ? '<img src="'+esc(s.school_stamp_url)+'" style="width:56px;opacity:.9;transform:rotate(-8deg);display:block;margin:0 auto;"/>' : '';
+  const sigOfficeHtml = (includeAccSign && s.sig_office_url) ? '<img src="'+esc(s.sig_office_url)+'" style="height:34px;display:block;margin:0 auto 2px;"/>' : '';
+  const sigPrincipalHtml = s.sig_principal_url ? '<img src="'+esc(s.sig_principal_url)+'" style="height:34px;display:block;margin:0 auto 2px;"/>' : '';
+  const qrHtml = a.id ? '<img src="'+idCardQrUrl('admission', a.id)+'" style="width:54px;height:54px;display:block;margin:0 auto;"/><div style="font-size:8px;color:#888;margin-top:2px;">Scan to verify</div>' : '';
   const w=window.open('','_blank');
   w.document.write('<html><head><title>Admission Confirmation Slip - '+appNo+'</title><style>'+
     '@page{size:A5;margin:14mm;}'+
@@ -3490,8 +3688,8 @@ async function printSlip(id){
     '.appno span{font-size:20px;font-weight:700;color:#0a1628;font-family:monospace;letter-spacing:1px;}'+
     '.status{text-align:center;margin-top:14px;}'+
     '.status span{display:inline-block;padding:6px 18px;border-radius:100px;font-size:12px;font-weight:700;background:#dcfce7;color:#166534;border:1px solid #a8d5b5;}'+
-    '.ft{margin-top:26px;display:flex;justify-content:space-between;align-items:flex-end;font-size:10.5px;color:#666;}'+
-    '.sig{text-align:center;width:32%;}'+
+    '.ft{margin-top:26px;display:flex;justify-content:space-between;align-items:flex-end;font-size:10.5px;color:#666;gap:8px;}'+
+    '.sig{text-align:center;flex:1;min-width:0;}'+
     '.sig-line{border-top:1px solid #999;margin-top:2px;padding-top:3px;}'+
     '</style></head><body>'+
     '<div class="slip">'+
@@ -3500,7 +3698,7 @@ async function printSlip(id){
       '<div class="body-row">'+
         '<div class="info">'+
           '<div class="row"><label>Student Name</label><span>'+esc(a.student_name)+'</span></div>'+
-          '<div class="row"><label>Class</label><span>'+a.applying_class+'</span></div>'+
+          '<div class="row"><label>Class</label><span>'+dispClass(a.applying_class)+'</span></div>'+
           '<div class="row"><label>Date of Birth</label><span>'+(a.dob||'-')+'</span></div>'+
           '<div class="row"><label>Gender</label><span>'+(a.gender||'-')+'</span></div>'+
           '<div class="row"><label>Father Name</label><span>'+esc(a.father_name||'-')+'</span></div>'+
@@ -3511,11 +3709,12 @@ async function printSlip(id){
       '</div>'+
       '<div class="status"><span>STATUS: '+a.status.toUpperCase()+'</span></div>'+
       '<div class="ft">'+
-        '<div class="sig">'+sigOfficeHtml+'<div class="sig-line">HR / Accountant Signature</div></div>'+
-        '<div class="sig">'+sigPrincipalHtml+'<div class="sig-line">Principal Signature</div></div>'+
-        '<div class="sig" style="text-align:right;">Issued: '+new Date().toLocaleDateString('en-IN')+'</div>'+
+        (sigOfficeHtml ? '<div class="sig">'+sigOfficeHtml+'<div class="sig-line">HR / Accountant</div></div>' : '')+
+        '<div class="sig">'+sigPrincipalHtml+'<div class="sig-line">Principal</div></div>'+
+        (stampHtml ? '<div class="sig">'+stampHtml+'<div class="sig-line">School Seal</div></div>' : '')+
+        '<div class="sig">'+qrHtml+'</div>'+
       '</div>'+
-      stampHtml+
+      '<div style="text-align:center;font-size:9.5px;color:#999;margin-top:10px;">Issued: '+new Date().toLocaleDateString('en-IN')+'</div>'+
     '</div>'+
     '</body></html>');
   w.document.close();setTimeout(()=>w.print(),500);
@@ -4440,7 +4639,7 @@ function renderCustomForms(){
     <td><span class="pill ${f.is_active?'pill-contacted':'pill-pending'}">${f.is_active?'Live':'Draft'}</span></td>
     <td>${new Date(f.updated_at).toLocaleDateString('en-IN')}</td>
     <td class="tbl-actions">
-      <button class="btn-vw" onclick="openCustomForm('${f.form_key}')">Edit</button>
+      <button class="btn-vw" onclick="openCustomFormEditor('${f.id}')">Edit</button>
       <button class="btn-confirm" onclick="toggleCustomForm('${f.id}',${!f.is_active})">${f.is_active?'Unpublish':'Publish'}</button>
       <button class="btn-del" onclick="deleteCustomForm('${f.id}')">Delete</button>
     </td></tr>`).join('');
@@ -4747,8 +4946,15 @@ async function loadAdmitCardClass(){
 }
 function renderAdmitCardStudentList(){
   const wrap=document.getElementById('ac-student-list-wrap');
-  const q=(document.getElementById('ac-search')||{value:''}).value.toLowerCase();
-  const list=_acStudents.filter(s=> !q || (s.application_number||'').toLowerCase().includes(q) || (s.student_name||'').toLowerCase().includes(q) || (s.class_roll_no||'').toLowerCase().includes(q));
+  const q=(document.getElementById('ac-search')||{value:''}).value.toLowerCase().trim();
+  // Name / Application No can partial-match (helps narrow a long list) — but Roll Numbers must
+  // match EXACTLY, otherwise typing "1" would wrongly also match a student whose roll is "0016" etc.
+  const list=_acStudents.filter(s=> !q ||
+    (s.application_number||'').toLowerCase().includes(q) ||
+    (s.student_name||'').toLowerCase().includes(q) ||
+    (s.class_roll_no||'').toLowerCase() === q ||
+    (s.exam_roll_no||'').toLowerCase() === q
+  );
   if(!list.length){ wrap.innerHTML='<p class="no-data">Load a class to see students here.</p>'; return; }
   wrap.innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead><tr><th><input type="checkbox" onclick="document.querySelectorAll(\'.ac-chk\').forEach(c=>c.checked=this.checked)"/></th><th>App No.</th><th>Name</th><th>Class Roll</th><th>Exam Roll</th><th>Fee Status</th></tr></thead><tbody>' +
     list.map(s=>`<tr><td><input type="checkbox" class="ac-chk" data-id="${s.id}"/></td><td>${esc(s.application_number)}</td><td>${esc(s.student_name)}</td><td>${esc(s.class_roll_no||'-')}</td><td>${esc(s.exam_roll_no||'-')}</td><td>${s.exam_allowed===false?'<span style="color:#dc2626;font-weight:700;">Not Allowed</span>':'<span style="color:#16a34a;">OK</span>'}</td></tr>`).join('') +
@@ -4806,6 +5012,7 @@ function buildAdmitCardHTML(s, examPart, scheduleRows, instructions, settings){
   const photo = s.photo_url ? `<img src="${esc(s.photo_url)}" style="width:90px;height:104px;object-fit:cover;border:2px solid #0a1628;border-radius:6px;"/>` : '<div style="width:90px;height:104px;border:2px dashed #999;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;text-align:center;">No Photo</div>';
   const sigPrincipal = settings.sig_principal_url ? `<img src="${esc(settings.sig_principal_url)}" style="height:36px;display:block;margin:0 auto 2px;"/>` : '';
   const stamp = settings.school_stamp_url ? `<img src="${esc(settings.school_stamp_url)}" style="width:70px;opacity:.85;position:absolute;right:24px;bottom:30px;transform:rotate(-8deg);"/>` : '';
+  const qr = s.id ? `<div style="position:absolute;left:24px;bottom:26px;text-align:center;"><img src="${idCardQrUrl('student', s.id)}" style="width:64px;height:64px;"/><div style="font-size:8px;color:#888;margin-top:2px;">Scan to verify</div></div>` : '';
   const scheduleHtml = scheduleRows.length ? `<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:11px;">
       <thead><tr style="background:#0a1628;color:#fff;"><th style="padding:5px;border:1px solid #ccc;">Date</th><th style="padding:5px;border:1px solid #ccc;">Day</th><th style="padding:5px;border:1px solid #ccc;">Time</th><th style="padding:5px;border:1px solid #ccc;">Subject</th></tr></thead>
       <tbody>${scheduleRows.map(r=>`<tr><td style="padding:5px;border:1px solid #ccc;text-align:center;">${esc(r.date||'-')}</td><td style="padding:5px;border:1px solid #ccc;text-align:center;">${r.date?new Date(r.date).toLocaleDateString('en-IN',{weekday:'short'}):'-'}</td><td style="padding:5px;border:1px solid #ccc;text-align:center;">${esc(r.time||'-')}</td><td style="padding:5px;border:1px solid #ccc;">${esc(r.subject||'-')}</td></tr>`).join('')}</tbody>
@@ -4820,7 +5027,7 @@ function buildAdmitCardHTML(s, examPart, scheduleRows, instructions, settings){
       <div style="flex:1;font-size:12.5px;line-height:1.9;">
         <div><b>Student Name:</b> ${esc(s.student_name)}</div>
         <div><b>Father's Name:</b> ${esc(s.father_name||'-')}</div>
-        <div><b>Class:</b> ${esc(s.applying_class)} &nbsp; <b>Section:</b> ${esc(s.section||'-')}</div>
+        <div><b>Class:</b> ${esc(dispClass(s.applying_class))} &nbsp; <b>Section:</b> ${esc(s.section||'-')}</div>
         <div><b>Class Roll No:</b> ${esc(s.class_roll_no||'-')}</div>
         <div><b>Examination Roll No:</b> ${esc(s.exam_roll_no||'-')}</div>
         <div><b>Application No:</b> ${esc(s.application_number)}</div>
@@ -4836,6 +5043,7 @@ function buildAdmitCardHTML(s, examPart, scheduleRows, instructions, settings){
       <div style="width:31%;">${sigPrincipal}<div style="border-top:1px solid #333;padding-top:3px;">Principal's Signature</div></div>
     </div>
     ${stamp}
+    ${qr}
   </div>`;
 }
 
@@ -4954,6 +5162,7 @@ async function loadAttendanceSheet(){
       return `<tr>
         <td>${esc(s.student_name)}</td><td>${esc(s.application_number)}</td>
         <td style="text-align:center;"><input type="radio" name="att-${s.id}" value="present" ${st==='present'?'checked':''}/></td>
+        <td style="text-align:center;"><input type="radio" name="att-${s.id}" value="half_day" ${st==='half_day'?'checked':''}/></td>
         <td style="text-align:center;"><input type="radio" name="att-${s.id}" value="absent" ${st==='absent'?'checked':''}/></td>
         <td style="text-align:center;"><input type="radio" name="att-${s.id}" value="leave" ${st==='leave'?'checked':''}/></td>
       </tr>`;
@@ -4998,16 +5207,17 @@ async function loadAttendanceReport(){
     _attReportRows=students.map(s=>{
       const mine=records.filter(r=>r.application_number===s.application_number);
       const present=mine.filter(r=>r.status==='present').length;
+      const halfDay=mine.filter(r=>r.status==='half_day').length;
       const absent=mine.filter(r=>r.status==='absent').length;
       const leave=mine.filter(r=>r.status==='leave').length;
       const total=mine.length||1;
-      const pct=Math.round((present/total)*100);
-      return { student_name:s.student_name, application_number:s.application_number, present, absent, leave, pct };
+      const pct=Math.round(((present+halfDay*0.5)/total)*100);
+      return { student_name:s.student_name, application_number:s.application_number, present, halfDay, absent, leave, pct };
     });
     if(!_attReportRows.length){ body.innerHTML='<tr><td colspan="6" class="no-data">No students in this class.</td></tr>'; return; }
     body.innerHTML=_attReportRows.map(r=>`<tr>
       <td>${esc(r.student_name)}</td><td>${esc(r.application_number)}</td>
-      <td>${r.present}</td><td>${r.absent}</td><td>${r.leave}</td>
+      <td>${r.present} ${r.halfDay?('+ '+r.halfDay+' half'):''}</td><td>${r.absent}</td><td>${r.leave}</td>
       <td style="font-weight:700;color:${r.pct>=75?'#16a34a':'#dc2626'};">${r.pct}%</td>
     </tr>`).join('');
   }catch(e){ body.innerHTML='<tr><td colspan="6" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
@@ -5368,7 +5578,7 @@ function buildStudentCardHtml(s, cfg){
       <div class="idc-sub">Batrauliya, Paharpur, East Champaran</div>
       <div class="idc-photo">${photo}</div>
       <div class="idc-name">${esc(s.student_name)}</div>
-      <div class="idc-role">Class ${esc(s.applying_class)}${s.section?(' - '+esc(s.section)):''}</div>
+      <div class="idc-role">Class ${esc(dispClass(s.applying_class))}${s.section?(' - '+esc(s.section)):''}</div>
       <table class="idc-tbl">
         <tr><td>Student ID</td><td><b>${esc(s.student_id||'-')}</b></td></tr>
         <tr><td>Roll No.</td><td>${esc(s.exam_roll_no||s.class_roll_no||'-')}</td></tr>
@@ -5510,7 +5720,7 @@ function renderCertForm(panel){
   if(panel==='tc'){
     el.innerHTML = `
       <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:8px;">
-        <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;">${photo}<div><b>${esc(s.student_name)}</b><div style="font-size:12px;color:var(--muted);">App No: ${esc(s.application_number)} &middot; Class ${esc(s.applying_class||'-')}${s.section?(' - '+esc(s.section)):''} &middot; Father: ${esc(s.father_name||'-')}</div></div></div>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;">${photo}<div><b>${esc(s.student_name)}</b><div style="font-size:12px;color:var(--muted);">App No: ${esc(s.application_number)} &middot; Class ${esc(dispClass(s.applying_class)||'-')}${s.section?(' - '+esc(s.section)):''} &middot; Father: ${esc(s.father_name||'-')}</div></div></div>
         <div class="fg-row" style="flex-wrap:wrap;">
           <div class="fg" style="max-width:180px;"><label>Date of Admission</label><input type="date" id="tc-admission-date"/></div>
           <div class="fg" style="max-width:180px;"><label>Date of Leaving</label><input type="date" id="tc-leaving-date" value="${new Date().toISOString().slice(0,10)}"/></div>
@@ -5531,7 +5741,7 @@ function renderCertForm(panel){
   } else if(panel==='character'){
     el.innerHTML = `
       <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:8px;">
-        <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;">${photo}<div><b>${esc(s.student_name)}</b><div style="font-size:12px;color:var(--muted);">App No: ${esc(s.application_number)} &middot; Class ${esc(s.applying_class||'-')}${s.section?(' - '+esc(s.section)):''} &middot; Father: ${esc(s.father_name||'-')}</div></div></div>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;">${photo}<div><b>${esc(s.student_name)}</b><div style="font-size:12px;color:var(--muted);">App No: ${esc(s.application_number)} &middot; Class ${esc(dispClass(s.applying_class)||'-')}${s.section?(' - '+esc(s.section)):''} &middot; Father: ${esc(s.father_name||'-')}</div></div></div>
         <div class="fg-row" style="flex-wrap:wrap;">
           <div class="fg" style="max-width:180px;"><label>Studied From</label><input type="text" id="cc-from" placeholder="e.g. Class 1 / 2022"/></div>
           <div class="fg" style="max-width:180px;"><label>Studied To</label><input type="text" id="cc-to" placeholder="e.g. Class 5 / 2026"/></div>
@@ -5611,11 +5821,13 @@ function buildTcHtml(c, cfg){
   const photo = c.photo_url ? `<img class="cf-photo" src="${esc(c.photo_url)}"/>` : '';
   const qr = c.id ? `<img class="cf-qr" src="${certQrUrl(c.id)}"/>` : '';
   return `${certLetterheadHtml(cfg)}
-  <div class="cf-topline"><span>TC No: <b>${esc(c.cert_no)}</b></span><span>Date: <b>${new Date().toLocaleDateString('en-IN')}</b></span></div>
-  ${photo}
+  <div class="cf-topline-wrap">
+    <div class="cf-topline"><span>TC No: <b>${esc(c.cert_no)}</b></span><span>Date: <b>${new Date().toLocaleDateString('en-IN')}</b></span></div>
+    ${photo}
+  </div>
   <h2 class="cf-title">TRANSFER CERTIFICATE</h2>
   <div class="cf-body">
-    <p>This is to certify that <b>${esc(c.student_name)}</b>, son/daughter of <b>${esc(c.father_name||'-')}</b>, Application No. <b>${esc(c.application_number)}</b>, was a bonafide student of this school studying in Class <b>${esc(c.applying_class||'-')}</b>${c.section?(' Section '+esc(c.section)):''}.</p>
+    <p>This is to certify that <b>${esc(c.student_name)}</b>, son/daughter of <b>${esc(c.father_name||'-')}</b>, Application No. <b>${esc(c.application_number)}</b>, was a bonafide student of this school studying in Class <b>${esc(dispClass(c.applying_class)||'-')}</b>${c.section?(' Section '+esc(c.section)):''}.</p>
     <table class="cf-tbl">
       <tr><td>Date of Admission</td><td>${c.admission_date?new Date(c.admission_date).toLocaleDateString('en-IN'):'-'}</td></tr>
       <tr><td>Date of Leaving</td><td>${c.leaving_date?new Date(c.leaving_date).toLocaleDateString('en-IN'):'-'}</td></tr>
@@ -5635,8 +5847,10 @@ function buildCharacterHtml(c, cfg){
   const photo = c.photo_url ? `<img class="cf-photo" src="${esc(c.photo_url)}"/>` : '';
   const qr = c.id ? `<img class="cf-qr" src="${certQrUrl(c.id)}"/>` : '';
   return `${certLetterheadHtml(cfg)}
-  <div class="cf-topline"><span>Certificate No: <b>${esc(c.cert_no)}</b></span><span>Date: <b>${new Date().toLocaleDateString('en-IN')}</b></span></div>
-  ${photo}
+  <div class="cf-topline-wrap">
+    <div class="cf-topline"><span>Certificate No: <b>${esc(c.cert_no)}</b></span><span>Date: <b>${new Date().toLocaleDateString('en-IN')}</b></span></div>
+    ${photo}
+  </div>
   <h2 class="cf-title">CHARACTER CERTIFICATE</h2>
   <div class="cf-body">
     <p>This is to certify that <b>${esc(c.student_name)}</b>, son/daughter of <b>${esc(c.father_name||'-')}</b>, Application No. <b>${esc(c.application_number)}</b>, was a student of this school${c.studied_from||c.studied_to?(' from <b>'+esc(c.studied_from||'-')+'</b> to <b>'+esc(c.studied_to||'-')+'</b>'):''}.</p>
@@ -5652,8 +5866,10 @@ function buildExperienceHtml(c, cfg){
   const photo = c.photo_url ? `<img class="cf-photo" src="${esc(c.photo_url)}"/>` : '';
   const qr = c.id ? `<img class="cf-qr" src="${certQrUrl(c.id)}"/>` : '';
   return `${certLetterheadHtml(cfg)}
-  <div class="cf-topline"><span>Ref No: <b>${esc(c.ref_no)}</b></span><span>Date: <b>${new Date().toLocaleDateString('en-IN')}</b></span></div>
-  ${photo}
+  <div class="cf-topline-wrap">
+    <div class="cf-topline"><span>Ref No: <b>${esc(c.ref_no)}</b></span><span>Date: <b>${new Date().toLocaleDateString('en-IN')}</b></span></div>
+    ${photo}
+  </div>
   <h2 class="cf-title">EXPERIENCE LETTER</h2>
   <div class="cf-body">
     <p>This is to certify that <b>${esc(c.student_name)}</b>, Application No. <b>${esc(c.application_number)}</b>, worked at Ideal Children Academy as <b>${esc(c.designation_held||c.position||'-')}</b>${c.department?(', '+esc(c.department)+' Department'):''}.</p>
@@ -5677,8 +5893,9 @@ function printCertificateWindow(bodyHtml, title){
     .cf-head{text-align:center;border-bottom:3px double #0a1628;padding-bottom:14px;margin-bottom:18px;}
     .cf-head h1{margin:0;font-size:24px;color:#0a1628;letter-spacing:1px;}
     .cf-head p{margin:4px 0 0;font-size:12px;color:#555;}
-    .cf-topline{display:flex;justify-content:space-between;font-size:13px;margin-bottom:20px;}
-    .cf-photo{width:90px;height:90px;object-fit:cover;border-radius:6px;border:2px solid #d4a62a;position:absolute;top:110px;right:60px;}
+    .cf-topline-wrap{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px;}
+    .cf-topline{display:flex;flex-direction:column;gap:6px;font-size:13px;}
+    .cf-photo{width:90px;height:90px;object-fit:cover;border-radius:6px;border:2px solid #d4a62a;flex-shrink:0;}
     .cf-title{text-align:center;text-decoration:underline;letter-spacing:2px;color:#0a1628;font-size:19px;margin-bottom:22px;}
     .cf-body p{font-size:14.5px;line-height:1.9;text-align:justify;margin-bottom:12px;}
     .cf-tbl{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;}
@@ -5699,6 +5916,52 @@ function printCertificateWindow(bodyHtml, title){
   <div class="no-print" style="text-align:center;margin-top:24px;"><button onclick="window.print()" style="padding:10px 24px;background:#0a1628;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print</button></div>
   </body></html>`);
   w.document.close(); w.focus();
+}
+
+/* ═══════════════ ALL CERTIFICATES (record-keeping across TC/Character/Experience) ═══════════════ */
+let _allCertsCache=[];
+async function loadAllCertificates(){
+  const type=document.getElementById('allcerts-filter').value;
+  const body=document.getElementById('allcerts-body');
+  body.innerHTML='<tr><td colspan="5" class="no-data">Loading...</td></tr>';
+  try{
+    const headers={}; if(_adminToken) headers['x-admin-token']=_adminToken;
+    const resp=await fetch(ADM_API+'?action=list_certificates'+(type?('&type='+type):''),{headers});
+    const d=await resp.json(); if(!d.success) throw new Error(d.error);
+    _allCertsCache=d.data||[];
+    if(!_allCertsCache.length){ body.innerHTML='<tr><td colspan="5" class="no-data">No certificates issued yet.</td></tr>'; return; }
+    const typeLabel={tc:'Transfer Certificate',character:'Character Certificate',experience:'Experience Letter'};
+    body.innerHTML=_allCertsCache.map(c=>`<tr>
+      <td><span class="pill pill-contacted">${esc(typeLabel[c.type]||c.type)}</span></td>
+      <td>${esc(c.student_name)}</td>
+      <td style="font-family:monospace;font-size:12px;">${esc(c.cert_no||c.ref_no||'-')}</td>
+      <td>${new Date(c.created_at).toLocaleDateString('en-IN')}</td>
+      <td class="tbl-actions">
+        <button class="btn-vw" onclick='viewPrintCertificate(${JSON.stringify(c).replace(/'/g,"&apos;")})'>Print / Download</button>
+        <button class="btn-pdf" onclick="editCertificateRecord('${c.type}','${esc(c.application_number)}')">Edit</button>
+        <button class="btn-del" onclick="deleteCertificateRecord('${c.id}')">Delete</button>
+      </td>
+    </tr>`).join('');
+  }catch(e){ body.innerHTML='<tr><td colspan="5" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+async function viewPrintCertificate(c){
+  const cfg=await getIdCardBrandSettings();
+  if(c.type==='tc') printCertificateWindow(buildTcHtml(c,cfg), 'Transfer Certificate — '+c.student_name);
+  else if(c.type==='character') printCertificateWindow(buildCharacterHtml(c,cfg), 'Character Certificate — '+c.student_name);
+  else printCertificateWindow(buildExperienceHtml(c,cfg), 'Experience Letter — '+c.student_name);
+}
+function editCertificateRecord(type, applicationNumber){
+  // Takes you to the right certificate panel with this person already searched, so you can
+  // change the details and re-generate — it updates the SAME certificate (same Cert/Ref No).
+  showPanel(type);
+  setTimeout(()=>{
+    const searchBox=document.getElementById('cert-search-'+type);
+    if(searchBox){ searchBox.value=applicationNumber; (type==='experience'?searchStaffForCert():searchStudentsForCert(type)); }
+  }, 150);
+}
+async function deleteCertificateRecord(id){
+  if(!confirm('Delete this certificate record permanently?')) return;
+  try{ await adm('delete_certificate','POST',{id}); toast('Deleted.'); loadAllCertificates(); }catch(e){ toast('Error: '+e.message); }
 }
 
 async function loadResults(){
@@ -5924,7 +6187,7 @@ function rePhotoPreview(inp){
   };
   reader.readAsDataURL(inp.files[0]);
 }
-function reNewSubject(){ return {name:'',fa1:0,fa2:0,fa3:0,fa1_max:10,fa2_max:10,fa3_max:10,endterm:0,endterm_max:70}; }
+function reNewSubject(){ return {name:'',fa1:'',fa2:'',fa3:'',fa1_max:10,fa2_max:10,fa3_max:10,endterm:'',endterm_max:70}; }
 function reGradeFor(p){ p=Number(p)||0; if(p<33)return'F'; if(p<60)return'C'; if(p<75)return'B'; if(p<90)return'A'; return'A+'; }
 function reRenderSubjects(){
   const wrap=document.getElementById('re-subjects-wrap');
@@ -6636,9 +6899,9 @@ function buildLetterPageHTML(d, s){
         </tr></thead>
         <tbody>${subjects.map(su=>`<tr>
           <td style="padding:6px;border:1px solid #ccc;">${esc(su.name)}</td>
-          ${hasFA?`<td style="padding:6px;border:1px solid #ccc;text-align:center;">${esc(su.fa1)}/${esc(su.fa1_max)}</td><td style="padding:6px;border:1px solid #ccc;text-align:center;">${esc(su.fa2)}/${esc(su.fa2_max)}</td><td style="padding:6px;border:1px solid #ccc;text-align:center;">${esc(su.fa3)}/${esc(su.fa3_max)}</td><td style="padding:6px;border:1px solid #ccc;text-align:center;">${esc(su.endterm)}/${esc(su.endterm_max)}</td>`:''}
+          ${hasFA?`<td style="padding:6px;border:1px solid #ccc;text-align:center;">${su.fa1===''?'—':esc(su.fa1)+'/'+esc(su.fa1_max)}</td><td style="padding:6px;border:1px solid #ccc;text-align:center;">${su.fa2===''?'—':esc(su.fa2)+'/'+esc(su.fa2_max)}</td><td style="padding:6px;border:1px solid #ccc;text-align:center;">${su.fa3===''?'—':esc(su.fa3)+'/'+esc(su.fa3_max)}</td><td style="padding:6px;border:1px solid #ccc;text-align:center;">${su.endterm===''?'—':esc(su.endterm)+'/'+esc(su.endterm_max)}</td>`:''}
           <td style="padding:6px;border:1px solid #ccc;text-align:center;font-weight:700;">${esc(su.marks)}</td><td style="padding:6px;border:1px solid #ccc;text-align:center;">${esc(su.max)}</td>
-          <td style="padding:6px;border:1px solid #ccc;text-align:center;font-weight:700;color:${su.status==='Fail'?'#dc2626':'#16a34a'};">${esc(su.status||'-')}</td>
+          <td style="padding:6px;border:1px solid #ccc;text-align:center;font-weight:700;color:${su.status==='Fail'?'#dc2626':(su.status==='Pending'?'#888':'#16a34a')};">${esc(su.status||'-')}</td>
         </tr>`).join('')}</tbody>
       </table>
       ${hasFA?'<p style="font-size:10px;color:#888;margin-top:4px;">FA = Formative Assessment (periodic class test conducted during the term).</p>':''}
@@ -6685,7 +6948,7 @@ function buildLetterPageHTML(d, s){
       <div style="text-align:center;font-size:12px;color:#a67c1e;font-weight:700;margin-top:-10px;margin-bottom:14px;text-transform:uppercase;letter-spacing:.4px;">${esc(d.exam_name||'Annual Examination')}</div>
       <div style="font-size:13px;color:#444;line-height:1.9;">
         Student Name: <b>${esc(d.student_name)}</b>${d.father_name?(' &nbsp;|&nbsp; Father\'s Name: <b>'+esc(d.father_name)+'</b>'):''}<br/>
-        Application No: <b>${esc(d.application_number)}</b>${d.class_name?(' &nbsp;|&nbsp; Class: <b>'+esc(d.class_name)+(d.section?(' - '+esc(d.section)):'')+'</b>'):''}${d.roll_no?(' &nbsp;|&nbsp; Exam Roll No: <b>'+esc(d.roll_no)+'</b>'):''}${d.class_roll_no?(' &nbsp;|&nbsp; Class Roll No: <b>'+esc(d.class_roll_no)+'</b>'):''}
+        Application No: <b>${esc(d.application_number)}</b>${d.class_name?(' &nbsp;|&nbsp; Class: <b>'+esc(dispClass(d.class_name))+(d.section?(' - '+esc(d.section)):'')+'</b>'):''}${d.roll_no?(' &nbsp;|&nbsp; Exam Roll No: <b>'+esc(d.roll_no)+'</b>'):''}${d.class_roll_no?(' &nbsp;|&nbsp; Class Roll No: <b>'+esc(d.class_roll_no)+'</b>'):''}
       </div>` : `<div style="font-size:13px;color:#444;">Application No: <b>${esc(d.application_number)}</b></div>`}
       ${bodyHtml}
       <div class="sig-row">
@@ -6731,6 +6994,9 @@ function esc(s){
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// Avoids "Class: Class 9" (redundant word) next to a "Class:" label — shows "Class: 9" instead.
+// Leaves values like "Nursery"/"LKG"/"UKG" untouched since they don't start with "Class".
+function dispClass(c){ return String(c||'').replace(/^Class\s+/i,''); }
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);}
 function toggleMob(){document.getElementById('mobMenu').classList.toggle('open');}
 function closeMob(){document.getElementById('mobMenu').classList.remove('open');}
