@@ -2063,8 +2063,8 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
 <script>
 const API='/api';
 const ADM_API='/api';
-let _adminToken=null;
-let _accountsToken=null;
+let _adminToken=sessionStorage.getItem('ica_admin_token')||null;
+let _accountsToken=sessionStorage.getItem('ica_accounts_token')||null;
 async function call(ep,action,method,body){
   const o={method:method||'GET',headers:{'Content-Type':'application/json'}};
   if(_adminToken)o.headers['x-admin-token']=_adminToken;
@@ -2107,7 +2107,7 @@ function _rs(){
   sessT=setTimeout(()=>doLogout(true),SESS_MIN*60000);
 }
 function resetSession(e){if(e)e.preventDefault();_rs();}
-function endSession(){isLoggedIn=false;_adminToken=null;clearTimeout(sessT);clearTimeout(sessWT);clearInterval(sessTick);document.getElementById('sessionWarn').style.display='none';}
+function endSession(){isLoggedIn=false;_adminToken=null;sessionStorage.removeItem('ica_admin_token');clearTimeout(sessT);clearTimeout(sessWT);clearInterval(sessTick);document.getElementById('sessionWarn').style.display='none';}
 document.addEventListener('keydown',e=>{if(!isLoggedIn)return;if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key))||(e.ctrlKey&&e.key==='U')){e.preventDefault();toast('Developer tools disabled.');}});
 document.addEventListener('contextmenu',e=>{if(isLoggedIn)e.preventDefault();});
 function showLoading(t){document.getElementById('loadingText').textContent=t||'Loading...';document.getElementById('loadingOverlay').classList.add('show');}
@@ -2175,6 +2175,7 @@ async function doLogin(){
   }
 
   _adminToken = d.token;
+  sessionStorage.setItem('ica_admin_token', d.token);
 
   resetFails();
 
@@ -2252,6 +2253,7 @@ async function doAccLogin(){
   try{
     const r = await api('accounts_login','POST',{accountsId, password});
     _accountsToken = r.token;
+    sessionStorage.setItem('ica_accounts_token', r.token);
     hideAccLogin();
     document.getElementById('accountsOverlay').classList.add('show');
     showAccPanel('dashboard');
@@ -2262,6 +2264,7 @@ async function doAccLogin(){
 }
 function doAccLogout(){
   _accountsToken = null;
+  sessionStorage.removeItem('ica_accounts_token');
   document.getElementById('accountsOverlay').classList.remove('show');
   toast('Logged out of Accounts Panel.');
 }
@@ -2696,9 +2699,11 @@ async function useAttendanceSuggestion(){
     const r=await accGet('acc_attendance_salary_suggestion',{application_number:appNo, month});
     const s=r.data;
     document.getElementById('sal-amount').value=s.suggested_net;
-    box.textContent=`Based on ${s.present_days} present / ${s.absent_days} absent (of ${s.marked_days} marked days): Gross Rs.${s.suggested_gross.toLocaleString('en-IN')} − PF Rs.${s.pf_amount.toLocaleString('en-IN')}${s.esi_amount?(' − ESI Rs.'+s.esi_amount.toLocaleString('en-IN')):''} = Rs.${s.suggested_net.toLocaleString('en-IN')}`;
+    _salAdvanceAlreadyIncluded = !!s.advance_deduction;
+    box.innerHTML=`Based on ${s.present_days} present / ${s.absent_days} absent (of ${s.marked_days} marked days): Gross Rs.${s.suggested_gross.toLocaleString('en-IN')} − PF Rs.${s.pf_amount.toLocaleString('en-IN')}${s.esi_amount?(' − ESI Rs.'+s.esi_amount.toLocaleString('en-IN')):''}${s.advance_deduction?(' − <b style="color:#dc2626;">Loan/Advance Recovery Rs.'+s.advance_deduction.toLocaleString('en-IN')+'</b>'):''} = Rs.${s.suggested_net.toLocaleString('en-IN')}`;
   }catch(e){ box.textContent=''; toast('Error: '+e.message); }
 }
+let _salAdvanceAlreadyIncluded=false;
 async function addSalaryPayment(){
   const application_number=document.getElementById('sal-staff').value;
   const month=document.getElementById('sal-month').value;
@@ -2709,9 +2714,10 @@ async function addSalaryPayment(){
   const staff=_staffList.find(s=>s.application_number===application_number);
   showLoading('Saving...');
   try{
-    await adm2('acc_add_salary_payment',{application_number, name:staff?staff.name:'', month, amount: amount||undefined, mode, note});
-    hideLoading(); toast('Salary payment recorded! (PF auto-deducted per staff record if Amount was left blank.)');
-    document.getElementById('sal-amount').value=''; document.getElementById('sal-note').value='';
+    await adm2('acc_add_salary_payment',{application_number, name:staff?staff.name:'', month, amount: amount||undefined, mode, note, advance_already_applied:_salAdvanceAlreadyIncluded});
+    hideLoading(); toast('Salary payment recorded! (PF/ESI/outstanding advance auto-deducted per staff record if Amount was left blank.)');
+    document.getElementById('sal-amount').value=''; document.getElementById('sal-note').value=''; document.getElementById('sal-suggestion-box').textContent='';
+    _salAdvanceAlreadyIncluded=false;
   }catch(e){ hideLoading(); toast('Error: '+e.message); }
 }
 async function loadSalaryHistory(){
@@ -2989,7 +2995,8 @@ function printAdvanceSlip(a){
       <tr><td>Reason</td><td>${esc(a.reason||'-')}</td></tr>
       ${a.note?`<tr><td>Note</td><td>${esc(a.note)}</td></tr>`:''}
     </table>
-    <div style="display:flex;justify-content:space-between;margin-top:70px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:60px;">
+      <div style="text-align:center;">${a.id?`<img src="${idCardQrUrl('advance',a.id)}" style="width:60px;height:60px;"/><div style="font-size:8px;color:#888;">Scan to verify</div>`:''}</div>
       <div style="text-align:center;"><div style="border-top:1px solid #333;width:140px;padding-top:4px;font-size:11px;">Staff Signature</div></div>
       <div style="text-align:center;"><div style="border-top:1px solid #333;width:140px;padding-top:4px;font-size:11px;">Accountant Signature</div></div>
     </div>
@@ -3037,14 +3044,14 @@ async function initStaffAttendancePanel(){
 async function loadStaffAttendanceSheet(){
   const date=document.getElementById('sat-date').value;
   const body=document.getElementById('sat-sheet-body');
-  if(!date){ body.innerHTML='<tr><td colspan="5" class="no-data">Select a date.</td></tr>'; return; }
-  body.innerHTML='<tr><td colspan="5" class="no-data">Loading...</td></tr>';
+  if(!date){ body.innerHTML='<tr><td colspan="6" class="no-data">Select a date.</td></tr>'; return; }
+  body.innerHTML='<tr><td colspan="6" class="no-data">Loading...</td></tr>';
   try{
     const r=await accGet('acc_list_staff',{});
     _satStaff=(r.data||[]).filter(s=>(s.status||'active')==='active');
     const attR=await accGet('get_staff_attendance',{date});
     const existing={}; (attR.data||[]).forEach(x=>{ existing[x.application_number]=x.status; });
-    if(!_satStaff.length){ body.innerHTML='<tr><td colspan="5" class="no-data">No active staff found. Add staff under Staff ID Cards first.</td></tr>'; return; }
+    if(!_satStaff.length){ body.innerHTML='<tr><td colspan="6" class="no-data">No active staff found. Add staff under Staff ID Cards first.</td></tr>'; return; }
     body.innerHTML=_satStaff.map(s=>{
       const st=existing[s.application_number]||'present';
       return `<tr>
@@ -3055,7 +3062,10 @@ async function loadStaffAttendanceSheet(){
         <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="leave" ${st==='leave'?'checked':''}/></td>
       </tr>`;
     }).join('');
-  }catch(e){ body.innerHTML='<tr><td colspan="6" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+  }catch(e){
+    const isAuth = /unauthor/i.test(e.message);
+    body.innerHTML='<tr><td colspan="6" class="no-data">'+(isAuth?'Your Accounts session has expired — please log in again.':'Error: '+esc(e.message))+(isAuth?' <button class="btn-vw" onclick="doAccLogout();showAccLogin();">Log In Again</button>':'')+'</td></tr>';
+  }
 }
 function markAllStaffAttendance(status){
   _satStaff.forEach(s=>{
@@ -4496,15 +4506,22 @@ async function loadThemeOnInit(){
       const li=document.getElementById('nav-logo-icon');
       if(li) li.innerHTML = `<img src="${esc(d.site_logo_url)}" alt="Logo"/>`;
     }
-    // Hero visual — Building photo (main) + Students photo (floating accent), both admin-uploadable.
+    // Hero visual — avoid ever mixing the illustrated placeholder with a real photo (that's what
+    // caused the mismatched cartoon+real-photo look). Only show the small floating photo when
+    // there's ALSO a real main photo behind it; otherwise a single real photo just becomes the
+    // main hero image on its own (replacing the illustration entirely).
+    const heroBuildingEl = document.getElementById('pub-hero-building');
+    const heroPlaceholderEl = document.getElementById('hero-building-placeholder');
+    const heroStudentsEl = document.getElementById('pub-hero-students');
     if(d.hero_building_url){
-      const bi=document.getElementById('pub-hero-building'); const ph=document.getElementById('hero-building-placeholder');
-      if(bi){ bi.src=d.hero_building_url; bi.style.display='block'; }
-      if(ph) ph.style.display='none';
-    }
-    if(d.hero_students_url){
-      const si=document.getElementById('pub-hero-students');
-      if(si){ si.src=d.hero_students_url; si.style.display='block'; }
+      if(heroBuildingEl){ heroBuildingEl.src=d.hero_building_url; heroBuildingEl.style.display='block'; }
+      if(heroPlaceholderEl) heroPlaceholderEl.style.display='none';
+      if(d.hero_students_url && heroStudentsEl){ heroStudentsEl.src=d.hero_students_url; heroStudentsEl.style.display='block'; }
+    } else if(d.hero_students_url){
+      // No real building photo yet — use the students photo as the main image instead of
+      // floating it over the cartoon illustration.
+      if(heroBuildingEl){ heroBuildingEl.src=d.hero_students_url; heroBuildingEl.style.display='block'; }
+      if(heroPlaceholderEl) heroPlaceholderEl.style.display='none';
     }
   }catch(e){}
 }
@@ -6061,9 +6078,17 @@ function openResultEditor(id, forcedCategory){
   // put the old total into End Term so nothing is lost when editing old results.
   _reSubjects = _reSubjects.map(s=>{
     if(s && s.fa1===undefined && s.fa2===undefined && s.fa3===undefined && s.endterm===undefined){
-      return { name:s.name||'', fa1:0, fa2:0, fa3:0, fa1_max:10, fa2_max:10, fa3_max:10, endterm:s.marks||0, endterm_max:(s.max||70) };
+      return { name:s.name||'', fa1:'', fa2:'', fa3:'', fa1_max:10, fa2_max:10, fa3_max:10, endterm:s.marks||0, endterm_max:(s.max||70) };
     }
-    return { name:s.name||'', fa1:s.fa1||0, fa2:s.fa2||0, fa3:s.fa3||0, fa1_max:s.fa1_max||10, fa2_max:s.fa2_max||10, fa3_max:s.fa3_max||10, endterm:s.endterm||0, endterm_max:s.endterm_max||70 };
+    // IMPORTANT: keep '' as '' (means "not entered yet") — do NOT coerce to 0 here, or a term
+    // that was never filled in gets treated as "entered as zero" the next time this is saved,
+    // which is exactly what caused students to wrongly show as Fail before.
+    return {
+      name:s.name||'',
+      fa1: s.fa1!==undefined ? s.fa1 : '', fa2: s.fa2!==undefined ? s.fa2 : '', fa3: s.fa3!==undefined ? s.fa3 : '',
+      fa1_max:s.fa1_max||10, fa2_max:s.fa2_max||10, fa3_max:s.fa3_max||10,
+      endterm: s.endterm!==undefined ? s.endterm : '', endterm_max:s.endterm_max||70
+    };
   });
   if(!_reSubjects.length) _reSubjects=[reNewSubject()];
   const d = existing || {};
@@ -6112,14 +6137,15 @@ function openResultEditor(id, forcedCategory){
     <div id="re-academic-fields" style="display:${d.category!=='hiring'?'contents':'none'}">
       <div class="mdi"><label>Exam Name <span class="req">*</span></label>
         <select id="re-examname-select" onchange="reToggleExamCustom()">
-          <option value="Unit Test 1" ${d.exam_name==='Unit Test 1'?'selected':''}>Unit Test 1</option>
-          <option value="Half-Yearly Examination" ${d.exam_name==='Half-Yearly Examination'?'selected':''}>Half-Yearly Examination</option>
-          <option value="Unit Test 2" ${d.exam_name==='Unit Test 2'?'selected':''}>Unit Test 2</option>
-          <option value="Annual Examination" ${(!d.exam_name||d.exam_name==='Annual Examination')?'selected':''}>Annual Examination</option>
-          <option value="__custom__" ${d.exam_name && !['Unit Test 1','Half-Yearly Examination','Unit Test 2','Annual Examination'].includes(d.exam_name)?'selected':''}>Custom / Other...</option>
+          <option value="FA1" ${d.exam_name==='FA1'||d.exam_name==='Unit Test 1'?'selected':''}>FA1 (First Formative Assessment)</option>
+          <option value="FA2" ${d.exam_name==='FA2'||d.exam_name==='Half-Yearly Examination'?'selected':''}>FA2 (Second Formative Assessment)</option>
+          <option value="FA3" ${d.exam_name==='FA3'||d.exam_name==='Unit Test 2'?'selected':''}>FA3 (Third Formative Assessment)</option>
+          <option value="Final / Annual Examination" ${(!d.exam_name||d.exam_name==='Final / Annual Examination'||d.exam_name==='Annual Examination')?'selected':''}>Final / Annual Examination (combines FA1+FA2+FA3+End Term)</option>
+          <option value="__custom__" ${d.exam_name && !['FA1','FA2','FA3','Final / Annual Examination','Unit Test 1','Half-Yearly Examination','Unit Test 2','Annual Examination'].includes(d.exam_name)?'selected':''}>Custom / Other...</option>
         </select>
-        <input type="text" id="re-examname-custom" placeholder="Type exam name" value="${esc(d.exam_name && !['Unit Test 1','Half-Yearly Examination','Unit Test 2','Annual Examination'].includes(d.exam_name)?d.exam_name:'')}" style="margin-top:6px;display:${d.exam_name && !['Unit Test 1','Half-Yearly Examination','Unit Test 2','Annual Examination'].includes(d.exam_name)?'block':'none'};"/>
-        <p style="font-size:10.5px;color:var(--muted);margin-top:4px;">Marksheet No stays the SAME for this student throughout this Class (across FA1/FA2/FA3/End Term/any exam edits). Only when the student moves to a <b>different Class</b> does a new Marksheet No get generated.</p>
+        <input type="text" id="re-examname-custom" placeholder="Type exam name" value="${esc(d.exam_name && !['FA1','FA2','FA3','Final / Annual Examination','Unit Test 1','Half-Yearly Examination','Unit Test 2','Annual Examination'].includes(d.exam_name)?d.exam_name:'')}" style="margin-top:6px;display:${d.exam_name && !['FA1','FA2','FA3','Final / Annual Examination','Unit Test 1','Half-Yearly Examination','Unit Test 2','Annual Examination'].includes(d.exam_name)?'block':'none'};"/>
+        <p style="font-size:10.5px;color:var(--muted);margin-top:4px;">Pick <b>FA1</b> to enter just this term's marks (published/printable on its own). Pick <b>Final / Annual Examination</b> once all terms are done — it automatically pulls in any FA1/FA2/FA3 already saved for this student's class, you just add the End Term marks. Marksheet No stays the SAME throughout this Class.</p>
+        <div id="re-marksheet-no-display" style="font-size:11px;color:#16a34a;font-weight:600;margin-top:4px;"></div>
       </div>
       <div class="mdi"><label>Marksheet No ${d.marksheet_no?'':'(auto-generated on save)'}</label><input type="text" value="${esc(d.marksheet_no||'Will be generated automatically')}" disabled style="background:#f1f3f7;font-weight:700;"/></div>
       <div class="mdi"><label>Class</label><input type="text" id="re-class" value="${esc(d.class_name||'')}"/></div>
@@ -6163,14 +6189,24 @@ function openResultEditor(id, forcedCategory){
 function reToggleExamCustom(){
   const sel = document.getElementById('re-examname-select');
   const custom = document.getElementById('re-examname-custom');
-  if(!sel || !custom) return;
-  custom.style.display = sel.value === '__custom__' ? 'block' : 'none';
+  if(sel && custom) custom.style.display = sel.value === '__custom__' ? 'block' : 'none';
+  reRenderSubjects();
 }
 function reGetExamName(){
   const sel = document.getElementById('re-examname-select');
   if(!sel) return '';
   if(sel.value === '__custom__') return document.getElementById('re-examname-custom').value.trim();
   return sel.value;
+}
+// Which mark columns should be visible/editable right now — FA1/FA2/FA3 entry is a focused,
+// single-term form; Final/Annual (or a custom exam name) shows the full combined marksheet.
+function reGetExamFormat(){
+  const sel = document.getElementById('re-examname-select');
+  const v = sel ? sel.value : '';
+  if(v==='FA1') return 'fa1';
+  if(v==='FA2') return 'fa2';
+  if(v==='FA3') return 'fa3';
+  return 'all';
 }
 function reToggleCategory(){
   const cat=document.getElementById('re-category').value;
@@ -6192,7 +6228,13 @@ function reGradeFor(p){ p=Number(p)||0; if(p<33)return'F'; if(p<60)return'C'; if
 function reRenderSubjects(){
   const wrap=document.getElementById('re-subjects-wrap');
   if(!wrap)return;
-  wrap.innerHTML='<div style="display:grid;grid-template-columns:1.6fr .8fr .8fr .8fr .9fr .7fr auto;gap:5px;font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px;"><div>Subject</div><div>FA1 (max)</div><div>FA2 (max)</div><div>FA3 (max)</div><div>End Term (max)</div><div>%</div><div></div></div>' +
+  const format = reGetExamFormat(); // 'fa1' | 'fa2' | 'fa3' | 'all'
+  const d1 = (format==='fa1'||format==='all') ? 'flex' : 'none';
+  const d2 = (format==='fa2'||format==='all') ? 'flex' : 'none';
+  const d3 = (format==='fa3'||format==='all') ? 'flex' : 'none';
+  const de = (format==='all') ? 'flex' : 'none';
+  const dh1 = d1==='flex'?'block':'none', dh2 = d2==='flex'?'block':'none', dh3 = d3==='flex'?'block':'none', dhe = de==='flex'?'block':'none';
+  wrap.innerHTML='<div style="display:grid;grid-template-columns:1.6fr .8fr .8fr .8fr .9fr .7fr auto;gap:5px;font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px;"><div>Subject</div><div style="display:'+dh1+'">FA1 (max)</div><div style="display:'+dh2+'">FA2 (max)</div><div style="display:'+dh3+'">FA3 (max)</div><div style="display:'+dhe+'">End Term (max)</div><div>%</div><div></div></div>' +
     _reSubjects.map((s,i)=>{
       const obtained=(Number(s.fa1)||0)+(Number(s.fa2)||0)+(Number(s.fa3)||0)+(Number(s.endterm)||0);
       const max=(Number(s.fa1_max)||0)+(Number(s.fa2_max)||0)+(Number(s.fa3_max)||0)+(Number(s.endterm_max)||0);
@@ -6200,10 +6242,10 @@ function reRenderSubjects(){
       const failClass = pct<33 ? 'color:#dc2626;font-weight:700;' : 'color:#16a34a;font-weight:700;';
       return `<div style="display:grid;grid-template-columns:1.6fr .8fr .8fr .8fr .9fr .7fr auto;gap:5px;margin-bottom:5px;align-items:center;">
       <input type="text" value="${esc(s.name)}" placeholder="Subject" style="padding:5px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;" onchange="_reSubjects[${i}].name=this.value;reCalcSummary();"/>
-      <div style="display:flex;gap:2px;"><input type="number" value="${s.fa1}" style="width:38px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:11px;" oninput="_reSubjects[${i}].fa1=this.value;reRenderSubjects();"/><input type="number" value="${s.fa1_max}" style="width:32px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:10px;color:#888;" oninput="_reSubjects[${i}].fa1_max=this.value;reRenderSubjects();"/></div>
-      <div style="display:flex;gap:2px;"><input type="number" value="${s.fa2}" style="width:38px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:11px;" oninput="_reSubjects[${i}].fa2=this.value;reRenderSubjects();"/><input type="number" value="${s.fa2_max}" style="width:32px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:10px;color:#888;" oninput="_reSubjects[${i}].fa2_max=this.value;reRenderSubjects();"/></div>
-      <div style="display:flex;gap:2px;"><input type="number" value="${s.fa3}" style="width:38px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:11px;" oninput="_reSubjects[${i}].fa3=this.value;reRenderSubjects();"/><input type="number" value="${s.fa3_max}" style="width:32px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:10px;color:#888;" oninput="_reSubjects[${i}].fa3_max=this.value;reRenderSubjects();"/></div>
-      <div style="display:flex;gap:2px;"><input type="number" value="${s.endterm}" style="width:44px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:11px;" oninput="_reSubjects[${i}].endterm=this.value;reRenderSubjects();"/><input type="number" value="${s.endterm_max}" style="width:36px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:10px;color:#888;" oninput="_reSubjects[${i}].endterm_max=this.value;reRenderSubjects();"/></div>
+      <div style="display:${d1};gap:2px;"><input type="number" value="${s.fa1}" style="width:38px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:11px;" oninput="_reSubjects[${i}].fa1=this.value;reRenderSubjects();"/><input type="number" value="${s.fa1_max}" style="width:32px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:10px;color:#888;" oninput="_reSubjects[${i}].fa1_max=this.value;reRenderSubjects();"/></div>
+      <div style="display:${d2};gap:2px;"><input type="number" value="${s.fa2}" style="width:38px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:11px;" oninput="_reSubjects[${i}].fa2=this.value;reRenderSubjects();"/><input type="number" value="${s.fa2_max}" style="width:32px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:10px;color:#888;" oninput="_reSubjects[${i}].fa2_max=this.value;reRenderSubjects();"/></div>
+      <div style="display:${d3};gap:2px;"><input type="number" value="${s.fa3}" style="width:38px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:11px;" oninput="_reSubjects[${i}].fa3=this.value;reRenderSubjects();"/><input type="number" value="${s.fa3_max}" style="width:32px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:10px;color:#888;" oninput="_reSubjects[${i}].fa3_max=this.value;reRenderSubjects();"/></div>
+      <div style="display:${de};gap:2px;"><input type="number" value="${s.endterm}" style="width:44px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:11px;" oninput="_reSubjects[${i}].endterm=this.value;reRenderSubjects();"/><input type="number" value="${s.endterm_max}" style="width:36px;padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:10px;color:#888;" oninput="_reSubjects[${i}].endterm_max=this.value;reRenderSubjects();"/></div>
       <div style="${failClass}font-size:11.5px;">${obtained}/${max||0}<br/>${pct}%</div>
       <button type="button" class="btn-del" style="padding:4px 7px;" onclick="_reSubjects.splice(${i},1);reRenderSubjects();">X</button>
     </div>`;}).join('');
@@ -6251,7 +6293,12 @@ async function reAutoFillByRoll(){
     const sec=document.getElementById('re-section'); if(sec) sec.value = info.section||'';
     const fn=document.getElementById('re-father'); if(fn) fn.value = info.father_name||'';
     const rn=document.getElementById('re-roll'); if(rn) rn.value = info.roll_no||rollNo;
-    toast("Student found — details filled in. Now pick the Exam Name and enter marks below.");
+    if(info.existing_result){
+      loadExistingResultIntoEditor(info.existing_result);
+      toast('This student already has a marksheet for this class — previous marks loaded. Pick the next Exam Name to continue.');
+    } else {
+      toast("Student found — details filled in. Now pick the Exam Name and enter marks below.");
+    }
   }catch(e){ hideLoading(); toast('Lookup failed: '+e.message); }
 }
 async function reAutoFill(){
@@ -6276,8 +6323,30 @@ async function reAutoFill(){
       document.getElementById('re-photo-preview').src = info.photo_url;
       document.getElementById('re-photo-preview').style.display='block';
     }
-    toast('Details auto-filled from '+(d.source==='admission'?'admission form':(d.source==='form_submission'?'application form':'existing record'))+'.');
+    if(info.existing_result){
+      loadExistingResultIntoEditor(info.existing_result);
+      toast('This student already has a marksheet for this class — previous marks loaded. Pick the next Exam Name to continue.');
+    } else {
+      toast('Details auto-filled from '+(d.source==='admission'?'admission form':(d.source==='form_submission'?'application form':'existing record'))+'.');
+    }
   }catch(e){ hideLoading(); toast('Lookup failed: '+e.message); }
+}
+// Pulls an existing result document (e.g. one where FA1 was already entered) into the currently
+// open editor, so continuing with FA2/FA3/Final doesn't lose anything already saved — and so
+// saving again UPDATES this same marksheet (same Marksheet No) instead of creating a duplicate.
+function loadExistingResultIntoEditor(existing){
+  _reEditId = existing.id;
+  _reSubjects = Array.isArray(existing.subjects) && existing.subjects.length ? JSON.parse(JSON.stringify(existing.subjects)) : [reNewSubject()];
+  _reSubjects = _reSubjects.map(s=>({
+    name:s.name||'',
+    fa1: s.fa1!==undefined ? s.fa1 : '', fa2: s.fa2!==undefined ? s.fa2 : '', fa3: s.fa3!==undefined ? s.fa3 : '',
+    fa1_max:s.fa1_max||10, fa2_max:s.fa2_max||10, fa3_max:s.fa3_max||10,
+    endterm: s.endterm!==undefined ? s.endterm : '', endterm_max:s.endterm_max||70
+  }));
+  const roll=document.getElementById('re-roll'); if(roll && existing.roll_no) roll.value=existing.roll_no;
+  const classroll=document.getElementById('re-classroll'); if(classroll && existing.class_roll_no) classroll.value=existing.class_roll_no;
+  const msBox=document.getElementById('re-marksheet-no-display'); if(msBox) msBox.textContent = existing.marksheet_no ? ('Existing Marksheet No: '+existing.marksheet_no+' (will be kept — not a new one)') : '';
+  reRenderSubjects();
 }
 async function saveResult(){
   const appno=document.getElementById('re-appno').value.trim();
@@ -7012,6 +7081,35 @@ renderPublicNotices();
 checkAdmissionStatus();
 loadThemeOnInit();
 initLandingAnimations();
+restoreSessionOnLoad();
+// A page refresh used to always force a fresh login, even mid-work — this restores whichever
+// panel (Admin or Accounts) was open, as long as the saved session token is still valid.
+async function restoreSessionOnLoad(){
+  try{
+    if(_adminToken){
+      const r = await fetch(ADM_API+'?action=get_settings',{headers:{'x-admin-token':_adminToken}});
+      const d = await r.json();
+      if(d.success){
+        isLoggedIn=true;
+        document.getElementById('adminOverlay').classList.add('show');
+        showPanel('dashboard');
+        _rs(); // restart the inactivity/session timers
+        return;
+      }
+      _adminToken=null; sessionStorage.removeItem('ica_admin_token');
+    }
+    if(_accountsToken){
+      const r = await fetch(ADM_API+'?action=acc_list_staff',{headers:{'x-accounts-token':_accountsToken}});
+      const d = await r.json();
+      if(d.success){
+        document.getElementById('accountsOverlay').classList.add('show');
+        showAccPanel('dashboard');
+        return;
+      }
+      _accountsToken=null; sessionStorage.removeItem('ica_accounts_token');
+    }
+  }catch(e){ /* couldn't verify — just fall back to the normal login screen, no harm done */ }
+}
 /* ── AI Chat Assistant ── */
 let _chatbotOpened=false, _chatbotFaqs=[];
 function toggleChatbot(){

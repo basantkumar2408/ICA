@@ -670,13 +670,16 @@ if (
         // class/section (e.g. after a Transfer), while admissions holds the original
         // applying_class only.
         const fs = await db.collection('fee_students').findOne({ application_number: appNumber });
+        const className = (fs && fs.applying_class) || adm.applying_class || '';
+        const existingResult = className ? await db.collection('results').findOne({ application_number: appNumber, category: 'academic', class_name: className }) : null;
         return ok(res, { source: 'admission', data: {
           name: adm.student_name || '', photo_url: adm.photo_file_url || adm.photo_url || '',
           dob: adm.dob || '', category: 'academic',
-          class_name: (fs && fs.applying_class) || adm.applying_class || '',
+          class_name: className,
           section: (fs && fs.section) || '',
           father_name: adm.father_name || '',
-          roll_no: (fs && (fs.exam_roll_no || fs.class_roll_no)) || ''
+          roll_no: (fs && (fs.exam_roll_no || fs.class_roll_no)) || '',
+          existing_result: existingResult ? mapDoc(existingResult) : null
         }});
       }
 
@@ -902,21 +905,16 @@ if (
       const staff = await db.collection('staff').findOne({ application_number });
       if (!staff) return err(res, 'Staff not found.');
       const records = await db.collection('staff_attendance').find({ application_number, date: { $regex: '^' + month } }).toArray();
-      const daysInMonth = new Date(Number(month.split('-')[0]), Number(month.split('-')[1]), 0).getDate();
       const presentDays = records.filter(r => r.status === 'present' || r.status === 'leave').length;
       const halfDays = records.filter(r => r.status === 'half_day').length;
       const absentDays = records.filter(r => r.status === 'absent').length;
-      const deductionDays = absentDays + (halfDays * 0.5);
-      const gross = (staff.basic_pay || 0) + (staff.hra || 0);
-      const perDay = gross / daysInMonth;
-      const suggested = Math.round(perDay * (daysInMonth - deductionDays));
-      const pfAmount = Math.round(((staff.basic_pay || 0) * (staff.pf_percent || 0)) / 100);
-      const esiAmount = Math.round(((staff.basic_pay || 0) * (staff.esi_percent || 0)) / 100);
+      const calc = await computeSalaryForStaff(staff, month);
       return ok(res, {
         data: {
-          days_in_month: daysInMonth, marked_days: records.length, present_days: presentDays, half_days: halfDays, absent_days: absentDays,
-          per_day_rate: Math.round(perDay), gross_pay: gross, suggested_gross: suggested,
-          pf_amount: pfAmount, esi_amount: esiAmount, suggested_net: Math.max(0, suggested - pfAmount - esiAmount)
+          days_in_month: calc.days_in_month, marked_days: calc.marked_days, present_days: presentDays, half_days: halfDays, absent_days: absentDays,
+          gross_pay: (staff.basic_pay || 0) + (staff.hra || 0), suggested_gross: calc.gross,
+          pf_amount: calc.pf_amount, esi_amount: calc.esi_amount, advance_deduction: calc.advance_deduction,
+          suggested_net: calc.net, _advance_recoveries: calc.advance_recoveries
         }
       });
     }
@@ -1316,10 +1314,16 @@ if (
         const adm = await db.collection('admissions').findOne({ application_number: appNumber, dob });
         if (adm) {
           const fs = await db.collection('fee_students').findOne({ application_number: appNumber });
+          const className = (fs && fs.applying_class) || adm.applying_class;
+          // If this student already has a result document for this class (e.g. FA1 was entered
+          // earlier), return it too so the form can pick up right where the last entry left off —
+          // instead of starting from a blank marksheet and losing previously entered FA marks.
+          const existingResult = await db.collection('results').findOne({ application_number: appNumber, category: 'academic', class_name: className });
           return ok(res, { data: {
             application_number: adm.application_number, student_name: adm.student_name,
-            class_name: (fs && fs.applying_class) || adm.applying_class, section: (fs && fs.section) || '',
-            father_name: adm.father_name || '', roll_no: (fs && (fs.exam_roll_no || fs.class_roll_no)) || '', dob
+            class_name: className, section: (fs && fs.section) || '',
+            father_name: adm.father_name || '', roll_no: (fs && (fs.exam_roll_no || fs.class_roll_no)) || '', dob,
+            existing_result: existingResult ? mapDoc(existingResult) : null
           }});
         }
         return err(res, 'No admission record found for that Application Number & DOB.', 404);
@@ -1330,7 +1334,8 @@ if (
         return ok(res, { data: {
           application_number: existingResult.application_number, student_name: existingResult.student_name,
           class_name: existingResult.class_name, section: existingResult.section || '',
-          father_name: existingResult.father_name || '', roll_no: existingResult.roll_no, dob
+          father_name: existingResult.father_name || '', roll_no: existingResult.roll_no, dob,
+          existing_result: mapDoc(existingResult)
         }});
       }
       return err(res, 'No student found with that Roll No & DOB yet. Use Application Number for a first-time entry.', 404);
@@ -1826,6 +1831,21 @@ if (
       const data = await db.collection('salary_payments').find(q).sort({ month: -1 }).toArray();
       return ok(res, { data: mapDocs(data) });
     }
+    // Advance/Loan recovery against any given net-pay amount (works whether that amount came
+    // from attendance auto-calc or was typed in manually) — oldest advances recovered first.
+    async function computeAdvanceRecovery(db, application_number, availableNet) {
+      const outstandingAdvances = await db.collection('staff_advances').find({ application_number, recovered: { $ne: true } }).sort({ date: 1 }).toArray();
+      let advanceDeduction = 0, remainingToDeduct = availableNet;
+      const advanceRecoveries = [];
+      for (const adv of outstandingAdvances) {
+        const owed = (adv.amount || 0) - (adv.recovered_amount || 0);
+        if (owed <= 0 || remainingToDeduct <= 0) continue;
+        const take = Math.min(owed, remainingToDeduct);
+        advanceDeduction += take; remainingToDeduct -= take;
+        advanceRecoveries.push({ id: adv._id, take, newTotal: (adv.recovered_amount || 0) + take, fullyRecovered: (adv.recovered_amount || 0) + take >= adv.amount });
+      }
+      return { advance_deduction: advanceDeduction, advance_recoveries: advanceRecoveries };
+    }
     if (action === 'acc_add_salary_payment' && req.method === 'POST') {
       if (!(await requireAccounts(req, res, db))) return;
       const { application_number, name, month, mode, note } = body;
@@ -1840,14 +1860,23 @@ if (
       const esi_amount = Math.round((basic_pay * esi_percent) / 100);
       const gross_pay = basic_pay + hra;
       // If a manual "amount" is given, use it as the final net pay; otherwise auto-calculate (Basic + HRA - PF - ESI).
-      const netPay = (body.amount !== undefined && body.amount !== '') ? Number(body.amount) : Math.max(0, gross_pay - pf_amount - esi_amount);
-      if (!netPay && !gross_pay) return err(res, 'Enter either an Amount, or Basic Pay/HRA to auto-calculate.');
+      const netPayBeforeAdvance = (body.amount !== undefined && body.amount !== '') ? Number(body.amount) : Math.max(0, gross_pay - pf_amount - esi_amount);
+      if (!netPayBeforeAdvance && !gross_pay) return err(res, 'Enter either an Amount, or Basic Pay/HRA to auto-calculate.');
+      // Skip advance recovery if this payment already had it manually baked into the "amount"
+      // typed via the "Use Attendance Suggestion" button (flagged by the frontend).
+      let advance_deduction = 0, advance_recoveries = [];
+      if (!body.advance_already_applied) {
+        const rec = await computeAdvanceRecovery(db, application_number, netPayBeforeAdvance);
+        advance_deduction = rec.advance_deduction; advance_recoveries = rec.advance_recoveries;
+      }
+      const netPay = Math.max(0, netPayBeforeAdvance - advance_deduction);
       const doc = {
         application_number, name: name || (staff && staff.name) || '', month,
-        basic_pay, hra, pf_percent, esi_percent, pf_amount, esi_amount, gross_pay,
+        basic_pay, hra, pf_percent, esi_percent, pf_amount, esi_amount, advance_deduction, gross_pay,
         amount: netPay, mode: mode || 'Bank Transfer', note: note || '', paid_on: nowIso(), created_at: nowIso()
       };
       const r = await db.collection('salary_payments').insertOne(doc);
+      await applyAdvanceRecoveries(db, advance_recoveries);
       return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
     }
     // Bulk Bank Transfer File — one CSV ready to upload straight into the bank's Corporate
@@ -1886,8 +1915,33 @@ if (
       const suggestedGross = records.length ? Math.round(perDay * (daysInMonth - deductionDays)) : gross;
       const pfAmount = Math.round(((staff.basic_pay || 0) * (staff.pf_percent || 0)) / 100);
       const esiAmount = Math.round(((staff.basic_pay || 0) * (staff.esi_percent || 0)) / 100);
-      const net = Math.max(0, suggestedGross - pfAmount - esiAmount);
-      return { gross: suggestedGross, pf_amount: pfAmount, esi_amount: esiAmount, net, marked_days: records.length, absent_days: absentDays, days_in_month: daysInMonth };
+      const netBeforeAdvance = Math.max(0, suggestedGross - pfAmount - esiAmount);
+      // Automatically recover any outstanding Loan/Advance against this month's pay — oldest
+      // advances first, never taking more than what's actually owed or what's available to pay.
+      const outstandingAdvances = await db.collection('staff_advances').find({ application_number: staff.application_number, recovered: { $ne: true } }).sort({ date: 1 }).toArray();
+      let advanceDeduction = 0, remainingToDeduct = netBeforeAdvance;
+      const advanceRecoveries = [];
+      for (const adv of outstandingAdvances) {
+        const owed = (adv.amount || 0) - (adv.recovered_amount || 0);
+        if (owed <= 0 || remainingToDeduct <= 0) continue;
+        const take = Math.min(owed, remainingToDeduct);
+        advanceDeduction += take; remainingToDeduct -= take;
+        advanceRecoveries.push({ id: adv._id, take, newTotal: (adv.recovered_amount || 0) + take, fullyRecovered: (adv.recovered_amount || 0) + take >= adv.amount });
+      }
+      const net = Math.max(0, netBeforeAdvance - advanceDeduction);
+      return {
+        gross: suggestedGross, pf_amount: pfAmount, esi_amount: esiAmount, advance_deduction: advanceDeduction,
+        advance_recoveries: advanceRecoveries, net, marked_days: records.length, absent_days: absentDays, days_in_month: daysInMonth
+      };
+    }
+    // Applies the advance recoveries computed above — call this AFTER the salary payment is saved.
+    async function applyAdvanceRecoveries(db, advanceRecoveries) {
+      for (const r of (advanceRecoveries || [])) {
+        await db.collection('staff_advances').updateOne(
+          { _id: r.id },
+          { $set: { recovered_amount: r.newTotal, recovered: r.fullyRecovered, updated_at: nowIso() } }
+        );
+      }
     }
 
     // ── One-Click Bulk Payroll ── Generates (and records) this month's salary for every ACTIVE
@@ -1914,12 +1968,13 @@ if (
           application_number: staff.application_number, name: staff.name, month,
           basic_pay: staff.basic_pay || 0, hra: staff.hra || 0, pf_percent: staff.pf_percent || 0,
           esi_percent: staff.esi_percent || 0, pf_amount: calc.pf_amount, esi_amount: calc.esi_amount,
-          gross_pay: calc.gross, amount: calc.net, mode: 'Bank Transfer',
+          advance_deduction: calc.advance_deduction, gross_pay: calc.gross, amount: calc.net, mode: 'Bank Transfer',
           note: calc.marked_days ? 'Auto-generated from attendance (Bulk Payroll)' : 'Auto-generated — no attendance marked, full month assumed',
           paid_on: nowIso(), created_at: nowIso()
         };
         await db.collection('salary_payments').insertOne(doc);
-        results.push({ application_number: staff.application_number, name: staff.name, status: 'generated', amount: calc.net });
+        await applyAdvanceRecoveries(db, calc.advance_recoveries);
+        results.push({ application_number: staff.application_number, name: staff.name, status: 'generated', amount: calc.net, advance_deduction: calc.advance_deduction });
       }
       return ok(res, { data: results, generated: results.filter(r => r.status === 'generated').length, skipped: results.filter(r => r.status === 'skipped').length });
     }
@@ -2073,6 +2128,7 @@ app.get('/verify-id', async (req, res) => {
     else if (oid && type === 'marksheet') record = await db.collection('results').findOne({ _id: oid });
     else if (oid && type === 'certificate') record = await db.collection('certificates').findOne({ _id: oid });
     else if (oid && type === 'admission') record = await db.collection('admissions').findOne({ _id: oid });
+    else if (oid && type === 'advance') record = await db.collection('staff_advances').findOne({ _id: oid });
 
     if (!record) {
       html = `<div class="vcard bad"><div class="vicon">&#10060;</div><h2>Invalid ID Card</h2><p>This QR code does not match any active record. If you believe this is an error, please contact the school office.</p></div>`;
@@ -2141,6 +2197,17 @@ app.get('/verify-id', async (req, res) => {
           <tr><td>Class</td><td>${escHtml(record.applying_class || '-')}</td></tr>
           <tr><td>Status</td><td>${escHtml(record.status || '-')}</td></tr>
           <tr><td>Academic Year</td><td>${escHtml(record.academic_year || '-')}</td></tr>
+        </table>
+      </div>`;
+    } else if (type === 'advance') {
+      html = `<div class="vcard good">
+        <div class="vicon">&#128181;</div>
+        <h2>${escHtml(record.staff_name)}</h2>
+        <div class="vbadge ok">&#9989; Genuine ICA Advance Slip</div>
+        <table class="vtbl">
+          <tr><td>Slip No.</td><td><b>${escHtml(record.slip_no)}</b></td></tr>
+          <tr><td>Amount</td><td>Rs. ${(record.amount || 0).toLocaleString('en-IN')}</td></tr>
+          <tr><td>Date</td><td>${escHtml(new Date(record.date).toLocaleDateString('en-IN'))}</td></tr>
         </table>
       </div>`;
     } else {
