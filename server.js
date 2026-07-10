@@ -178,6 +178,46 @@ async function requireAccounts(req, res, db) {
   err(res, 'Unauthorized', 401);
   return false;
 }
+
+// ── CUSTOM PANELS ── Admin can create additional named logins (e.g. "Teacher Panel",
+// "Librarian Panel"), each granted access to only a chosen set of modules. Every action a
+// custom panel is allowed to call is listed here, mapped to the permission key that unlocks it.
+const CUSTOM_PANEL_ACTION_MODULES = {
+  mark_student_attendance: 'student_attendance', get_student_attendance: 'student_attendance',
+  add_notice: 'notices', update_notice: 'notices', delete_notice: 'notices',
+  save_result: 'results', lookup_student_for_result: 'results', lookup_application: 'results',
+  add_gallery: 'gallery', delete_gallery: 'gallery',
+  search_students_for_cert: 'certificates', search_staff_for_cert: 'certificates',
+  generate_certificate: 'certificates', generate_experience_letter: 'certificates', list_certificates: 'certificates',
+  list_students: ['id_cards', 'student_attendance', 'results'] // any one of these grants the student list
+};
+async function moduleGrantsAction(panel, moduleKeyOrArray) {
+  if (!panel || !panel.permissions) return false;
+  const keys = Array.isArray(moduleKeyOrArray) ? moduleKeyOrArray : [moduleKeyOrArray];
+  return keys.some(k => panel.permissions[k]);
+}
+async function getCustomPanelByToken(db, token) {
+  if (!token) return null;
+  return await db.collection('custom_panels').findOne({ token, status: { $ne: 'blocked' } });
+}
+// Allows a request through if it's Admin, or an Accounts-token action, or a Custom Panel whose
+// permissions include the module this specific action belongs to.
+async function isAuthorizedForAction(req, db, action) {
+  if (isAdmin(req)) return true;
+  if (action.startsWith('acc_')) return true; // existing behaviour — acc_ actions check requireAccounts internally
+  const moduleKey = CUSTOM_PANEL_ACTION_MODULES[action];
+  if (moduleKey) {
+    const panelToken = req.headers['x-panel-token'] || '';
+    const panel = await getCustomPanelByToken(db, panelToken);
+    if (await moduleGrantsAction(panel, moduleKey)) return true;
+  }
+  return false;
+}
+async function hasCustomPanelModule(req, db, moduleKey) {
+  const token = req.headers['x-panel-token'] || '';
+  const panel = await getCustomPanelByToken(db, token);
+  return !!(panel && panel.permissions && panel.permissions[moduleKey]);
+}
 function ok(res, data)  { res.json({ success: true,  ...data }); }
 function err(res, msg, code) { res.status(code || 400).json({ success: false, error: msg }); }
 
@@ -270,6 +310,73 @@ app.all('/api', async (req, res) => {
         return ok(res, { token: tokenRow.value, accountsId });
       }
       return err(res, 'Invalid Accounts Panel credentials', 401);
+    }
+
+    // Verifies a stored Custom Panel token (used to silently restore a session after page refresh).
+    if (action === 'custom_panel_verify' && req.method === 'GET') {
+      const panel = await getCustomPanelByToken(db, req.headers['x-panel-token'] || '');
+      if (!panel) return err(res, 'Invalid or expired session.', 401);
+      return ok(res, { name: panel.name, permissions: panel.permissions || {} });
+    }
+    // ── Public login for any admin-created Custom Panel (e.g. Teacher Panel, Librarian Panel) ──
+    if (action === 'custom_panel_login' && req.method === 'POST') {      const { loginId, password } = body;
+      if (!loginId || !password) return err(res, 'Login ID and password are required.');
+      const panel = await db.collection('custom_panels').findOne({ login_id: loginId });
+      if (!panel || panel.password !== password) return err(res, 'Invalid login credentials.', 401);
+      if (panel.status === 'blocked') return err(res, 'This panel has been blocked by the Admin.', 403);
+      return ok(res, { token: panel.token, name: panel.name, permissions: panel.permissions || {} });
+    }
+    // ── Admin: manage Custom Panels ──
+    if (action === 'admin_list_custom_panels' && req.method === 'GET') {
+      if (!isAdmin(req)) return err(res, 'Unauthorized', 401);
+      const list = await db.collection('custom_panels').find({}).sort({ created_at: -1 }).toArray();
+      return ok(res, { data: mapDocs(list.map(p => { const { password, ...safe } = p; return safe; })) });
+    }
+    if (action === 'admin_create_custom_panel' && req.method === 'POST') {
+      if (!isAdmin(req)) return err(res, 'Unauthorized', 401);
+      const { name, login_id, password, permissions } = body;
+      if (!name || !login_id || !password) return err(res, 'Panel Name, Login ID and Password are required.');
+      if (!isStrongPassword(password)) return err(res, PASSWORD_RULE_MSG, 400);
+      const existing = await db.collection('custom_panels').findOne({ login_id });
+      if (existing) return err(res, 'That Login ID is already used by another panel.');
+      const token = 'PANEL_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      const doc = { name, login_id, password, permissions: permissions || {}, token, status: 'active', created_at: nowIso() };
+      const r = await db.collection('custom_panels').insertOne(doc);
+      const { password: _pw, ...safe } = doc;
+      return ok(res, { data: mapDoc({ ...safe, _id: r.insertedId }) });
+    }
+    if (action === 'admin_update_custom_panel' && req.method === 'POST') {
+      if (!isAdmin(req)) return err(res, 'Unauthorized', 401);
+      const { id, name, permissions, new_password, status } = body;
+      const oid = toOid(id); if (!oid) return err(res, 'Missing id');
+      const setFields = { updated_at: nowIso() };
+      if (name !== undefined) setFields.name = name;
+      if (permissions !== undefined) setFields.permissions = permissions;
+      if (status !== undefined) setFields.status = status;
+      if (new_password) {
+        if (!isStrongPassword(new_password)) return err(res, PASSWORD_RULE_MSG, 400);
+        setFields.password = new_password;
+        // Rotate the token too, so anyone already logged in with the old password is signed out.
+        setFields.token = 'PANEL_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      }
+      await db.collection('custom_panels').updateOne({ _id: oid }, { $set: setFields });
+      const updated = await db.collection('custom_panels').findOne({ _id: oid });
+      const { password: _pw, ...safe } = updated;
+      return ok(res, { data: mapDoc(safe) });
+    }
+    if (action === 'admin_delete_custom_panel' && req.method === 'POST') {
+      if (!isAdmin(req)) return err(res, 'Unauthorized', 401);
+      const oid = toOid(body.id); if (!oid) return err(res, 'Missing id');
+      await db.collection('custom_panels').deleteOne({ _id: oid });
+      return ok(res, {});
+    }
+    // Lets Admin jump directly into any Custom Panel's view without knowing its password.
+    if (action === 'admin_impersonate_custom_panel' && req.method === 'GET') {
+      if (!isAdmin(req)) return err(res, 'Unauthorized', 401);
+      const oid = toOid(req.query.id); if (!oid) return err(res, 'Missing id');
+      const panel = await db.collection('custom_panels').findOne({ _id: oid });
+      if (!panel) return err(res, 'Panel not found.');
+      return ok(res, { token: panel.token, name: panel.name, permissions: panel.permissions || {} });
     }
     if (action === 'get_notices' && req.method === 'GET') {
       const data = await db.collection('notices').find({}).sort({ created_at: -1 }).limit(10).toArray();
@@ -655,7 +762,7 @@ if (
       await db.collection('settings').updateOne({ key: 'admin_id' }, { $set: { key: 'admin_id', value: cleanId } }, { upsert: true });
       return ok(res, { message: 'Admin ID updated successfully', adminId: cleanId });
     }
-    if (!isAdmin(req) && !action.startsWith('acc_')) return err(res, 'Unauthorized', 401);
+    if (!(await isAuthorizedForAction(req, db, action))) return err(res, 'Unauthorized', 401);
 
     // Auto-fill helper: given an Application Number, find the applicant's
     // name / photo / DOB / category from whichever collection has it
@@ -846,7 +953,7 @@ if (
     /* ═══════════ ATTENDANCE ═══════════ */
     // Student attendance is managed from the Admin Panel, by Class + Date.
     if (action === 'mark_student_attendance' && req.method === 'POST') {
-      if (!isAdmin(req)) return err(res, 'Unauthorized', 401);
+      if (!isAdmin(req) && !(await hasCustomPanelModule(req, db, 'student_attendance'))) return err(res, 'Unauthorized', 401);
       const { class_name, date, records } = body;
       if (!class_name || !date || !Array.isArray(records)) return err(res, 'Class, date, and records are required.');
       const ops = records.map(r => ({
@@ -860,7 +967,7 @@ if (
       return ok(res, { marked: ops.length });
     }
     if (action === 'get_student_attendance' && req.method === 'GET') {
-      if (!isAdmin(req)) return err(res, 'Unauthorized', 401);
+      if (!isAdmin(req) && !(await hasCustomPanelModule(req, db, 'student_attendance'))) return err(res, 'Unauthorized', 401);
       const { class_name, date, month } = req.query;
       const filter = {};
       if (class_name) filter.class_name = class_name;

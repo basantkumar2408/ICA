@@ -359,6 +359,8 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
 #accLoginOverlay{display:none;position:fixed;inset:0;z-index:10000;background:rgba(10,22,40,.92);align-items:center;justify-content:center;}
 #accLoginOverlay.show{display:flex;}
 #accountsOverlay{display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);}
+#customPanelOverlay{display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);}
+#customPanelOverlay.show{display:flex;}
 #accountsOverlay.show{display:flex;}
 .admin-sidebar{width:240px;background:var(--navy);height:100vh;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
 .sb-head{padding:18px 14px 15px;border-bottom:1px solid rgba(255,255,255,.07);}
@@ -1065,6 +1067,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       <div class="sb-item" id="nav-allcerts" onclick="showPanel('allcerts')"><span class="sb-icon">&#128193;</span>All Certificates</div>
       <div class="sb-sec">Website</div>
       <div class="sb-item" id="nav-chatbot" onclick="showPanel('chatbot')"><span class="sb-icon">&#128172;</span>Chatbot FAQs</div>
+      <div class="sb-item" id="nav-custompanels" onclick="showPanel('custompanels')"><span class="sb-icon">&#128273;</span>Custom Panels</div>
       <div class="sb-sec">Settings</div>
       <div class="sb-item" id="nav-sitesettings" onclick="showPanel('sitesettings')"><span class="sb-icon">&#9881;</span>Site Settings</div>
       <div class="sb-item" onclick="openAccountsPanel()"><span class="sb-icon">&#128176;</span>Accounts Panel</div>
@@ -1515,6 +1518,38 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
         </div>
       </div>
 
+      <!-- CUSTOM PANELS -->
+      <div class="admin-panel" id="panel-custompanels">
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Create a New Panel</div></div>
+          <p style="font-size:11.5px;color:var(--muted);margin-bottom:12px;">Create a separate login for a teacher, librarian, or any other staff role — pick exactly which features they can access. They log in from the "Staff / Accounts Login" button on the homepage.</p>
+          <input type="hidden" id="cp-edit-id"/>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg"><label>Panel Name</label><input type="text" id="cp-name" placeholder="e.g. Class Teacher Panel"/></div>
+            <div class="fg" style="max-width:220px;"><label>Login ID</label><input type="text" id="cp-login-id" placeholder="e.g. teacher1"/></div>
+            <div class="fg" style="max-width:220px;"><label>Password <span id="cp-pw-optional" style="font-weight:400;color:var(--muted);display:none;">(leave blank to keep unchanged)</span></label><input type="text" id="cp-password" placeholder="e.g. Teach@2026!"/></div>
+          </div>
+          <p style="font-size:11px;color:var(--muted);margin:-6px 0 10px;">Password must include an uppercase letter, a lowercase letter, a number, and a special character.</p>
+          <label style="font-size:12.5px;font-weight:700;display:block;margin-bottom:8px;">Feature Access — tick everything this panel should be able to do:</label>
+          <div id="cp-permissions" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:14px;">
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-student_attendance" style="width:auto;"/> Mark Student Attendance</label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-results" style="width:auto;"/> Enter Exam Results / Marks</label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-notices" style="width:auto;"/> Post Notices</label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-gallery" style="width:auto;"/> Manage Gallery</label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-certificates" style="width:auto;"/> Issue Certificates (TC/Character/Experience)</label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-id_cards" style="width:auto;"/> View Student Lists (for ID Cards)</label>
+          </div>
+          <button class="btn-add" onclick="saveCustomPanel()">Save Panel</button>
+        </div>
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">All Panels</div></div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Name</th><th>Login ID</th><th>Access</th><th>Status</th><th></th></tr></thead>
+            <tbody id="custompanels-body"><tr><td colspan="5" class="no-data">Loading...</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
       <div class="admin-panel" id="panel-sitesettings">
         <div class="acard">
           <div class="acard-head"><div class="acard-title">Admission Year</div></div>
@@ -1666,16 +1701,17 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
 <!-- ACCOUNTS LOGIN (Principal + Accountant) -->
 <div id="accLoginOverlay">
   <div class="login-box">
-    <div class="login-head"><div class="login-badge">ICA</div><h2>Accounts Panel</h2><p>Fees, Invoices &amp; Staff Salary</p></div>
+    <div class="login-head"><div class="login-badge">ICA</div><h2>Staff Login</h2><p>Accounts, Teachers &amp; other Staff Panels</p></div>
     <div class="login-err" id="accLoginErr"></div>
-    <div class="fg"><label>Accounts ID</label><input type="text" id="accLoginId" placeholder="Enter Accounts ID" autocomplete="off"/></div>
+    <div class="fg"><label>Login ID</label><input type="text" id="accLoginId" placeholder="Enter your Login ID" autocomplete="off"/></div>
     <div class="fg"><label>Password</label><input type="password" id="accLoginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doAccLogin()"/></div>
-    <button class="login-btn" id="accLoginBtn" onclick="doAccLogin()">Login to Accounts Panel</button>
+    <button class="login-btn" id="accLoginBtn" onclick="doAccLogin()">Login</button>
     <div class="login-back"><a href="#" onclick="hideAccLogin()">Back to Website</a></div>
   </div>
 </div>
 
 <!-- ACCOUNTS PANEL -->
+<div id="customPanelOverlay"></div>
 <div id="accountsOverlay">
   <div class="admin-sidebar">
     <div class="sb-head"><div class="sb-logo-row"><div class="sb-badge">ICA</div><div><div class="sb-title">Accounts Panel</div><div class="sb-sub">Ideal Children Academy</div></div></div></div>
@@ -2065,6 +2101,7 @@ const API='/api';
 const ADM_API='/api';
 let _adminToken=sessionStorage.getItem('ica_admin_token')||null;
 let _accountsToken=sessionStorage.getItem('ica_accounts_token')||null;
+let _panelToken=sessionStorage.getItem('ica_panel_token')||null;
 async function call(ep,action,method,body){
   const o={method:method||'GET',headers:{'Content-Type':'application/json'}};
   if(_adminToken)o.headers['x-admin-token']=_adminToken;
@@ -2194,7 +2231,7 @@ async function doLogin(){
 }
 
 function doLogout(auto){endSession();document.getElementById('adminOverlay').classList.remove('show');toast(auto?'Auto-logged out due to inactivity.':'Logged out.');}
-const TITLES={dashboard:'Dashboard',admissions:'Admission Applications',enquiries:'Parent Enquiries',notices:'Notices',gallery:'Gallery',testimonials:'Testimonials',formbuilder:'Admission Form Builder',customforms:'Custom Forms',results:'Examination',hiring:'Hiring / Recruitment',duty:'Staff Duty Roster',attendance:'Student Attendance',staffid:'Staff ID Cards',studentid:'Student ID Cards',tc:'Transfer Certificate',character:'Character Certificate',experience:'Experience Letter',allcerts:'All Certificates',chatbot:'Chatbot FAQs',sitesettings:'Site Settings',password:'Change Password'};
+const TITLES={dashboard:'Dashboard',admissions:'Admission Applications',enquiries:'Parent Enquiries',notices:'Notices',gallery:'Gallery',testimonials:'Testimonials',formbuilder:'Admission Form Builder',customforms:'Custom Forms',results:'Examination',hiring:'Hiring / Recruitment',duty:'Staff Duty Roster',attendance:'Student Attendance',staffid:'Staff ID Cards',studentid:'Student ID Cards',tc:'Transfer Certificate',character:'Character Certificate',experience:'Experience Letter',allcerts:'All Certificates',chatbot:'Chatbot FAQs',custompanels:'Custom Panels',sitesettings:'Site Settings',password:'Change Password'};
 
 /* ═══════════════ ACCOUNTS PANEL (Fees, Invoices, Staff Salary) ═══════════════ */
 async function accGet(action, params){
@@ -2257,11 +2294,306 @@ async function doAccLogin(){
     hideAccLogin();
     document.getElementById('accountsOverlay').classList.add('show');
     showAccPanel('dashboard');
+    return;
   }catch(e){
-    errEl.textContent = e.message || 'Invalid credentials.';
-    errEl.style.display='block';
+    // Not an Accounts login — try it as a Custom Panel login (Teacher/Librarian/etc) before giving up.
+    try{
+      const r2 = await api('custom_panel_login','POST',{loginId:accountsId, password});
+      _panelToken = r2.token;
+      sessionStorage.setItem('ica_panel_token', r2.token);
+      hideAccLogin();
+      openCustomPanelOverlay(r2.name, r2.permissions);
+      return;
+    }catch(e2){
+      errEl.textContent = e2.message || e.message || 'Invalid credentials.';
+      errEl.style.display='block';
+    }
   }
 }
+async function panelApi(action, method, body){
+  const headers={'Content-Type':'application/json'}; if(_panelToken) headers['x-panel-token']=_panelToken;
+  const o={method:method||'GET',headers}; if(body) o.body=JSON.stringify(body);
+  const r=await fetch(API+'?action='+action,o);
+  const d=await r.json(); if(!d.success) throw new Error(d.error||'Error'); return d;
+}
+const CP_MODULE_TITLES={student_attendance:'Student Attendance',results:'Results Entry',notices:'Notices',gallery:'Gallery',certificates:'Certificates',id_cards:'Student Lists'};
+const CP_MODULE_ICONS={student_attendance:'&#9989;',results:'&#128202;',notices:'&#128227;',gallery:'&#128247;',certificates:'&#128196;',id_cards:'&#127891;'};
+function openCustomPanelOverlay(name, permissions){
+  const granted = CP_PERM_KEYS.filter(k=>permissions&&permissions[k]);
+  const overlay=document.getElementById('customPanelOverlay');
+  overlay.innerHTML = `
+    <div class="admin-sidebar">
+      <div class="sb-head"><div class="sb-logo-row"><div class="sb-badge">ICA</div><div><div class="sb-title">${esc(name)}</div><div class="sb-sub">Ideal Children Academy</div></div></div></div>
+      <div class="sb-nav">
+        ${granted.map((k,i)=>`<div class="sb-item ${i===0?'active':''}" id="cpnav-${k}" onclick="showCustomPanelModule('${k}')"><span class="sb-icon">${CP_MODULE_ICONS[k]}</span>${CP_MODULE_TITLES[k]}</div>`).join('')}
+        ${!granted.length?'<div style="padding:16px;font-size:12.5px;color:rgba(255,255,255,.5);">No features have been granted to this panel yet. Contact the Admin.</div>':''}
+      </div>
+      <div class="sb-logout" onclick="doCustomPanelLogout()"><span class="sb-icon">&#128682;</span>Logout</div>
+    </div>
+    <div class="admin-main">
+      <div class="admin-topbar">
+        <div class="admin-topbar-title" id="cpPanelTitle">${granted.length?CP_MODULE_TITLES[granted[0]]:'Dashboard'}</div>
+        <div class="admin-topbar-right"><div class="admin-uname">${esc(name)}</div><div class="admin-avatar">${esc(name.charAt(0))}</div></div>
+      </div>
+      <div class="admin-content" id="cpPanelContent"></div>
+    </div>`;
+  overlay.classList.add('show');
+  if(granted.length) showCustomPanelModule(granted[0]);
+}
+function doCustomPanelLogout(){
+  _panelToken=null; sessionStorage.removeItem('ica_panel_token');
+  document.getElementById('customPanelOverlay').classList.remove('show');
+  toast('Logged out.');
+}
+function showCustomPanelModule(key){
+  document.querySelectorAll('#customPanelOverlay .sb-item').forEach(el=>el.classList.remove('active'));
+  const nav=document.getElementById('cpnav-'+key); if(nav) nav.classList.add('active');
+  document.getElementById('cpPanelTitle').textContent = CP_MODULE_TITLES[key];
+  const box=document.getElementById('cpPanelContent');
+  if(key==='student_attendance') renderCpAttendance(box);
+  else if(key==='results') renderCpResults(box);
+  else if(key==='notices') renderCpNotices(box);
+  else if(key==='gallery') renderCpGallery(box);
+  else if(key==='certificates') renderCpCertificates(box);
+  else if(key==='id_cards') renderCpIdCards(box);
+}
+/* — Student Attendance — */
+function renderCpAttendance(box){
+  box.innerHTML = `<div class="acard">
+    <div class="acard-head"><div class="acard-title">Mark Attendance</div></div>
+    <div class="fg-row" style="flex-wrap:wrap;">
+      <div class="fg" style="max-width:200px;"><label>Class</label>
+        <select id="cpa-class" onchange="cpaLoad()"><option value="">Select Class</option>
+          <option>Nursery</option><option>LKG</option><option>UKG</option>
+          <option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option>
+          <option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option>
+        </select>
+      </div>
+      <div class="fg" style="max-width:180px;"><label>Date</label><input type="date" id="cpa-date" value="${new Date().toISOString().slice(0,10)}" onchange="cpaLoad()"/></div>
+    </div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Student</th><th>Present</th><th>Half Day</th><th>Absent</th><th>Leave</th></tr></thead>
+    <tbody id="cpa-body"><tr><td colspan="5" class="no-data">Select a class and date.</td></tr></tbody></table></div>
+    <button class="btn-add" onclick="cpaSave()">Save Attendance</button>
+  </div>`;
+}
+let _cpaStudents=[];
+async function cpaLoad(){
+  const cls=document.getElementById('cpa-class').value, date=document.getElementById('cpa-date').value;
+  const body=document.getElementById('cpa-body');
+  if(!cls||!date){ body.innerHTML='<tr><td colspan="5" class="no-data">Select a class and date.</td></tr>'; return; }
+  body.innerHTML='<tr><td colspan="5" class="no-data">Loading...</td></tr>';
+  try{
+    const r=await panelApi('list_students'); // admin-only list_students not permitted for panel — fallback below
+  }catch(e){}
+  try{
+    const headers={}; if(_panelToken) headers['x-panel-token']=_panelToken;
+    const resp=await fetch(ADM_API+'?action=list_students&class_name='+encodeURIComponent(cls),{headers});
+    const d=await resp.json(); if(!d.success) throw new Error(d.error);
+    _cpaStudents=d.data||[];
+    const attR=await panelApi('get_student_attendance&class_name='+encodeURIComponent(cls)+'&date='+date).catch(()=>({data:[]}));
+    const existing={}; (attR.data||[]).forEach(x=>{ existing[x.application_number]=x.status; });
+    if(!_cpaStudents.length){ body.innerHTML='<tr><td colspan="5" class="no-data">No students in this class.</td></tr>'; return; }
+    body.innerHTML=_cpaStudents.map(s=>{
+      const st=existing[s.application_number]||'present';
+      return `<tr><td>${esc(s.student_name)}</td>
+        <td style="text-align:center;"><input type="radio" name="cpa-${s.id}" value="present" ${st==='present'?'checked':''}/></td>
+        <td style="text-align:center;"><input type="radio" name="cpa-${s.id}" value="half_day" ${st==='half_day'?'checked':''}/></td>
+        <td style="text-align:center;"><input type="radio" name="cpa-${s.id}" value="absent" ${st==='absent'?'checked':''}/></td>
+        <td style="text-align:center;"><input type="radio" name="cpa-${s.id}" value="leave" ${st==='leave'?'checked':''}/></td>
+      </tr>`;
+    }).join('');
+  }catch(e){ body.innerHTML='<tr><td colspan="5" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+async function cpaSave(){
+  const cls=document.getElementById('cpa-class').value, date=document.getElementById('cpa-date').value;
+  if(!cls||!date){ toast('Select class and date.'); return; }
+  const records=_cpaStudents.map(s=>{
+    const checked=document.querySelector(`input[name="cpa-${s.id}"]:checked`);
+    return { application_number:s.application_number, student_name:s.student_name, status: checked?checked.value:'present' };
+  });
+  showLoading('Saving...');
+  try{ await panelApi('mark_student_attendance','POST',{class_name:cls, date, records}); hideLoading(); toast('Attendance saved!'); }
+  catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+/* — Results Entry (simplified) — */
+function renderCpResults(box){
+  box.innerHTML = `<div class="acard">
+    <div class="acard-head"><div class="acard-title">Enter Marks</div></div>
+    <div class="fg-row" style="flex-wrap:wrap;">
+      <div class="fg" style="max-width:220px;"><label>Application Number</label><input type="text" id="cpr-appno"/></div>
+      <div class="fg" style="max-width:180px;"><label>Date of Birth</label><input type="date" id="cpr-dob"/></div>
+      <div class="fg" style="max-width:150px;align-self:flex-end;"><button class="btn-vw" onclick="cprLookup()">Find Student</button></div>
+    </div>
+    <div id="cpr-form"></div>
+  </div>`;
+}
+let _cprSubjects=[]; let _cprStudent=null;
+async function cprLookup(){
+  const application_number=document.getElementById('cpr-appno').value.trim();
+  const dob=document.getElementById('cpr-dob').value;
+  if(!application_number||!dob){ toast('Enter Application Number and DOB.'); return; }
+  showLoading('Searching...');
+  try{
+    const r=await panelApi('lookup_student_for_result&application_number='+encodeURIComponent(application_number)+'&dob='+dob);
+    hideLoading();
+    _cprStudent=r.data;
+    _cprSubjects = (r.data.existing_result && r.data.existing_result.subjects && r.data.existing_result.subjects.length) ? JSON.parse(JSON.stringify(r.data.existing_result.subjects)) : [{name:'',marks:'',max:100}];
+    renderCprForm();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+function renderCprForm(){
+  const el=document.getElementById('cpr-form'); if(!_cprStudent) return;
+  el.innerHTML = `<div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:8px;">
+    <div style="margin-bottom:10px;"><b>${esc(_cprStudent.student_name)}</b> — Class ${esc(_cprStudent.class_name||'-')}${_cprStudent.section?(' - '+esc(_cprStudent.section)):''}</div>
+    <div id="cpr-subjects-wrap"></div>
+    <button type="button" class="btn-add" style="font-size:11px;padding:4px 10px;margin:8px 0;" onclick="_cprSubjects.push({name:'',marks:'',max:100});renderCprSubjects();">+ Add Subject</button>
+    <div class="fg"><label>Remarks</label><input type="text" id="cpr-remarks"/></div>
+    <button class="btn-add" onclick="cprSave()">Save Result</button>
+  </div>`;
+  renderCprSubjects();
+}
+function renderCprSubjects(){
+  const wrap=document.getElementById('cpr-subjects-wrap'); if(!wrap) return;
+  wrap.innerHTML = _cprSubjects.map((s,i)=>`<div style="display:flex;gap:6px;margin-bottom:6px;">
+    <input type="text" placeholder="Subject" value="${esc(s.name)}" style="flex:2;padding:6px 8px;border:1px solid var(--border);border-radius:6px;" onchange="_cprSubjects[${i}].name=this.value;"/>
+    <input type="number" placeholder="Marks" value="${s.marks}" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;" onchange="_cprSubjects[${i}].marks=this.value;"/>
+    <input type="number" placeholder="Max" value="${s.max}" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;" onchange="_cprSubjects[${i}].max=this.value;"/>
+    <button type="button" class="btn-del" onclick="_cprSubjects.splice(${i},1);renderCprSubjects();">X</button>
+  </div>`).join('');
+}
+async function cprSave(){
+  if(!_cprStudent) return;
+  showLoading('Saving...');
+  try{
+    await panelApi('save_result','POST',{
+      application_number:_cprStudent.application_number, dob:_cprStudent.dob, category:'academic',
+      student_name:_cprStudent.student_name, class_name:_cprStudent.class_name, section:_cprStudent.section,
+      roll_no:_cprStudent.roll_no, father_name:_cprStudent.father_name,
+      subjects:_cprSubjects.filter(s=>s.name), remarks:document.getElementById('cpr-remarks').value
+    });
+    hideLoading(); toast('Result saved!');
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+/* — Notices — */
+function renderCpNotices(box){
+  box.innerHTML = `<div class="acard">
+    <div class="acard-head"><div class="acard-title">Post a Notice</div></div>
+    <div class="fg"><label>Title</label><input type="text" id="cpn-title"/></div>
+    <div class="fg"><label>Category</label><select id="cpn-cat"><option>Announcement</option><option>Holiday</option><option>Exam</option><option>Event</option><option>Admission</option></select></div>
+    <div class="fg"><label>Content</label><textarea id="cpn-content" rows="3"></textarea></div>
+    <button class="btn-add" onclick="cpnSave()">Publish Notice</button>
+  </div>
+  <div class="acard"><div class="acard-head"><div class="acard-title">Recent Notices</div></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Title</th><th>Category</th><th></th></tr></thead><tbody id="cpn-body"><tr><td colspan="3" class="no-data">Loading...</td></tr></tbody></table></div>
+  </div>`;
+  cpnLoad();
+}
+async function cpnLoad(){
+  const body=document.getElementById('cpn-body');
+  try{
+    const r=await api('get_notices');
+    const list=r.data||[];
+    body.innerHTML = list.length ? list.map(n=>`<tr><td>${esc(n.title)}</td><td>${esc(n.category)}</td><td><button class="btn-del" onclick="cpnDelete('${n.id}')">Delete</button></td></tr>`).join('') : '<tr><td colspan="3" class="no-data">No notices yet.</td></tr>';
+  }catch(e){ body.innerHTML='<tr><td colspan="3" class="no-data">Error loading notices.</td></tr>'; }
+}
+async function cpnSave(){
+  const title=document.getElementById('cpn-title').value.trim();
+  if(!title){ toast('Enter a title.'); return; }
+  showLoading('Publishing...');
+  try{
+    await panelApi('add_notice','POST',{title, category:document.getElementById('cpn-cat').value, content:document.getElementById('cpn-content').value});
+    hideLoading(); toast('Notice published!');
+    document.getElementById('cpn-title').value='';document.getElementById('cpn-content').value='';
+    cpnLoad();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function cpnDelete(id){
+  if(!confirm('Delete this notice?')) return;
+  try{ await panelApi('delete_notice','POST',{id}); toast('Deleted.'); cpnLoad(); }catch(e){ toast('Error: '+e.message); }
+}
+/* — Gallery — */
+function renderCpGallery(box){
+  box.innerHTML = `<div class="acard">
+    <div class="acard-head"><div class="acard-title">Add Gallery Photo</div></div>
+    <div class="fg"><label>Caption</label><input type="text" id="cpg-caption" placeholder="e.g. Annual Sports Day 2026"/></div>
+    <div class="fg"><label>Image URL</label><input type="text" id="cpg-url" placeholder="https://..."/></div>
+    <div class="fg"><label>Category</label><select id="cpg-cat"><option>Events</option><option>Sports</option><option>Academic</option><option>Cultural</option></select></div>
+    <button class="btn-add" onclick="cpgSave()">Add to Gallery</button>
+  </div>`;
+}
+async function cpgSave(){
+  const caption=document.getElementById('cpg-caption').value.trim();
+  const url=document.getElementById('cpg-url').value.trim();
+  if(!caption){ toast('Enter a caption.'); return; }
+  if(!url){ toast('Enter an image URL.'); return; }
+  showLoading('Adding...');
+  try{ await panelApi('add_gallery','POST',{caption, image_url:url, category:document.getElementById('cpg-cat').value}); hideLoading(); toast('Added to gallery!'); document.getElementById('cpg-caption').value='';document.getElementById('cpg-url').value=''; }
+  catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+/* — Certificates (simplified: TC only, for brevity — full versions remain in Admin Panel) — */
+function renderCpCertificates(box){
+  box.innerHTML = `<div class="acard">
+    <div class="acard-head"><div class="acard-title">Search Student</div></div>
+    <input class="fi" type="text" id="cpc-search" placeholder="Search by Student ID, App No, or Name..." style="width:100%;max-width:400px;" oninput="cpcSearch()"/>
+    <div id="cpc-results" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;"></div>
+    <p style="font-size:11.5px;color:var(--muted);margin-top:10px;">For Character Certificates and Experience Letters, please ask the Admin — this panel issues Transfer Certificates only.</p>
+    <div id="cpc-form"></div>
+  </div>`;
+}
+async function cpcSearch(){
+  const q=document.getElementById('cpc-search').value.trim();
+  const box=document.getElementById('cpc-results');
+  if(q.length<2){ box.innerHTML=''; return; }
+  try{
+    const r=await panelApi('search_students_for_cert&q='+encodeURIComponent(q));
+    const list=r.data||[];
+    box.innerHTML=list.map(s=>`<div class="cert-result-item" onclick='cpcSelect(${JSON.stringify(s).replace(/'/g,"&apos;")})'><div><div class="crname">${esc(s.student_name)}</div><div class="crsub">${esc(s.application_number)} — Class ${esc(s.applying_class||'-')}</div></div></div>`).join('') || '<div style="font-size:12px;color:var(--muted);">No matches.</div>';
+  }catch(e){ box.innerHTML='<div style="font-size:12px;color:#dc2626;">'+esc(e.message)+'</div>'; }
+}
+function cpcSelect(s){
+  document.getElementById('cpc-form').innerHTML = `<div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:10px;">
+    <b>${esc(s.student_name)}</b> — ${esc(s.application_number)}
+    <div class="fg-row" style="flex-wrap:wrap;margin-top:10px;">
+      <div class="fg" style="max-width:180px;"><label>Date of Leaving</label><input type="date" id="cpc-leaving" value="${new Date().toISOString().slice(0,10)}"/></div>
+      <div class="fg"><label>Reason</label><input type="text" id="cpc-reason"/></div>
+    </div>
+    <button class="btn-add" onclick='cpcGenerate(${JSON.stringify(s).replace(/'/g,"&apos;")})'>Generate Transfer Certificate</button>
+  </div>`;
+}
+async function cpcGenerate(s){
+  showLoading('Generating...');
+  try{
+    const r=await panelApi('generate_certificate','POST',{type:'tc', student_fee_id:s.id, leaving_date:document.getElementById('cpc-leaving').value, reason:document.getElementById('cpc-reason').value});
+    hideLoading();
+    const cfg=await getIdCardBrandSettings();
+    printCertificateWindow(buildTcHtml(r.data,cfg), 'Transfer Certificate — '+r.data.student_name);
+    toast('Certificate generated!');
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+/* — Student Lists (read-only) — */
+function renderCpIdCards(box){
+  box.innerHTML = `<div class="acard">
+    <div class="acard-head"><div class="acard-title">Student List</div></div>
+    <select class="fi" id="cpi-class" onchange="cpiLoad()" style="margin-bottom:12px;"><option value="">Select Class</option>
+      <option>Nursery</option><option>LKG</option><option>UKG</option>
+      <option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option>
+      <option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option>
+    </select>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>App No.</th><th>Section</th></tr></thead><tbody id="cpi-body"><tr><td colspan="3" class="no-data">Select a class.</td></tr></tbody></table></div>
+  </div>`;
+}
+async function cpiLoad(){
+  const cls=document.getElementById('cpi-class').value;
+  const body=document.getElementById('cpi-body');
+  if(!cls){ body.innerHTML='<tr><td colspan="3" class="no-data">Select a class.</td></tr>'; return; }
+  try{
+    const headers={}; if(_panelToken) headers['x-panel-token']=_panelToken;
+    const resp=await fetch(ADM_API+'?action=list_students&class_name='+encodeURIComponent(cls),{headers});
+    const d=await resp.json(); if(!d.success) throw new Error(d.error);
+    body.innerHTML = (d.data||[]).map(s=>`<tr><td>${esc(s.student_name)}</td><td>${esc(s.application_number)}</td><td>${esc(s.section||'-')}</td></tr>`).join('') || '<tr><td colspan="3" class="no-data">No students found.</td></tr>';
+  }catch(e){ body.innerHTML='<tr><td colspan="3" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+
 function doAccLogout(){
   _accountsToken = null;
   sessionStorage.removeItem('ica_accounts_token');
@@ -3278,6 +3610,7 @@ async function showPanel(id){
   if(id==='experience'){_certSearchResults=[];_certSelected={};renderCertSearchResults('experience');}
   if(id==='allcerts')await loadAllCertificates();
   if(id==='chatbot')await loadChatbotFaqsAdmin();
+  if(id==='custompanels')await loadCustomPanelsAdmin();
   if(id==='sitesettings')await loadSiteSettings();
 }
 let _admOpen=false;
@@ -6255,8 +6588,15 @@ function reAddSubject(){ _reSubjects.push(reNewSubject()); reRenderSubjects(); }
 function reCalcSummary(){
   let totalObtained=0,totalMax=0,anyFail=false;
   _reSubjects.filter(s=>s.name).forEach(s=>{
-    const obtained=(Number(s.fa1)||0)+(Number(s.fa2)||0)+(Number(s.fa3)||0)+(Number(s.endterm)||0);
-    const max=(Number(s.fa1_max)||0)+(Number(s.fa2_max)||0)+(Number(s.fa3_max)||0)+(Number(s.endterm_max)||0);
+    // Only count a term's marks/max if it was ACTUALLY entered (not blank) — this must match
+    // the backend's computeAcademicResult exactly, otherwise the live preview shown while
+    // typing (e.g. "42/600") won't match what actually gets published (e.g. "42/60").
+    const enteredFa1 = s.fa1!==undefined && s.fa1!=='';
+    const enteredFa2 = s.fa2!==undefined && s.fa2!=='';
+    const enteredFa3 = s.fa3!==undefined && s.fa3!=='';
+    const enteredEnd = s.endterm!==undefined && s.endterm!=='';
+    const obtained=(enteredFa1?Number(s.fa1)||0:0)+(enteredFa2?Number(s.fa2)||0:0)+(enteredFa3?Number(s.fa3)||0:0)+(enteredEnd?Number(s.endterm)||0:0);
+    const max=(enteredFa1?Number(s.fa1_max)||0:0)+(enteredFa2?Number(s.fa2_max)||0:0)+(enteredFa3?Number(s.fa3_max)||0:0)+(enteredEnd?Number(s.endterm_max)||0:0);
     totalObtained+=obtained; totalMax+=max;
     if(max && (obtained/max)*100 < 33) anyFail=true;
   });
@@ -7108,6 +7448,15 @@ async function restoreSessionOnLoad(){
       }
       _accountsToken=null; sessionStorage.removeItem('ica_accounts_token');
     }
+    if(_panelToken){
+      const r = await fetch(ADM_API+'?action=custom_panel_verify',{headers:{'x-panel-token':_panelToken}});
+      const d = await r.json();
+      if(d.success){
+        openCustomPanelOverlay(d.name, d.permissions);
+        return;
+      }
+      _panelToken=null; sessionStorage.removeItem('ica_panel_token');
+    }
   }catch(e){ /* couldn't verify — just fall back to the normal login screen, no harm done */ }
 }
 /* ── AI Chat Assistant ── */
@@ -7146,6 +7495,83 @@ async function sendChatbotMessage(){
 }
 /* ── Admin: manage Chatbot FAQs ── */
 let _chatbotFaqsAdmin=[];
+/* ═══════════════ CUSTOM PANELS (admin-created staff/teacher logins with granular access) ═══════════════ */
+const CP_PERM_KEYS=['student_attendance','results','notices','gallery','certificates','id_cards'];
+const CP_PERM_LABELS={student_attendance:'Student Attendance',results:'Results Entry',notices:'Notices',gallery:'Gallery',certificates:'Certificates',id_cards:'Student Lists'};
+let _customPanelsCache=[];
+async function loadCustomPanelsAdmin(){
+  const body=document.getElementById('custompanels-body');
+  try{
+    const r=await adm('admin_list_custom_panels');
+    _customPanelsCache=r.data||[];
+    if(!_customPanelsCache.length){ body.innerHTML='<tr><td colspan="5" class="no-data">No custom panels yet — create one above.</td></tr>'; return; }
+    body.innerHTML=_customPanelsCache.map(p=>{
+      const access=CP_PERM_KEYS.filter(k=>p.permissions&&p.permissions[k]).map(k=>CP_PERM_LABELS[k]).join(', ')||'None';
+      const blocked=p.status==='blocked';
+      return `<tr>
+        <td style="font-weight:700;">${esc(p.name)}</td><td>${esc(p.login_id)}</td>
+        <td style="font-size:11.5px;color:var(--muted);">${esc(access)}</td>
+        <td><span style="color:${blocked?'#dc2626':'#16a34a'};font-weight:700;">${blocked?'Blocked':'Active'}</span></td>
+        <td class="tbl-actions">
+          <button class="btn-vw" onclick="loginAsCustomPanel('${p.id}')">Log In As</button>
+          <button class="btn-pdf" onclick='editCustomPanel(${JSON.stringify(p).replace(/'/g,"&apos;")})'>Edit</button>
+          <button class="btn-excel" onclick="toggleCustomPanelStatus('${p.id}','${blocked?'active':'blocked'}')">${blocked?'Unblock':'Block'}</button>
+          <button class="btn-del" onclick="deleteCustomPanel('${p.id}')">Delete</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }catch(e){ body.innerHTML='<tr><td colspan="5" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+function editCustomPanel(p){
+  document.getElementById('cp-edit-id').value=p.id;
+  document.getElementById('cp-name').value=p.name;
+  document.getElementById('cp-login-id').value=p.login_id;
+  document.getElementById('cp-login-id').disabled=true;
+  document.getElementById('cp-password').value='';
+  document.getElementById('cp-pw-optional').style.display='inline';
+  CP_PERM_KEYS.forEach(k=>{ document.getElementById('cp-perm-'+k).checked = !!(p.permissions&&p.permissions[k]); });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+async function saveCustomPanel(){
+  const id=document.getElementById('cp-edit-id').value;
+  const name=document.getElementById('cp-name').value.trim();
+  const login_id=document.getElementById('cp-login-id').value.trim();
+  const password=document.getElementById('cp-password').value;
+  const permissions={}; CP_PERM_KEYS.forEach(k=>{ permissions[k]=document.getElementById('cp-perm-'+k).checked; });
+  if(!name||!login_id){ toast('Panel Name and Login ID are required.'); return; }
+  if(!id && !password){ toast('Password is required for a new panel.'); return; }
+  showLoading('Saving...');
+  try{
+    if(id){
+      await adm('admin_update_custom_panel','POST',{id, name, permissions, new_password:password||undefined});
+    } else {
+      await adm('admin_create_custom_panel','POST',{name, login_id, password, permissions});
+    }
+    hideLoading(); toast('Panel saved!');
+    document.getElementById('cp-edit-id').value='';document.getElementById('cp-name').value='';document.getElementById('cp-login-id').value='';document.getElementById('cp-login-id').disabled=false;document.getElementById('cp-password').value='';document.getElementById('cp-pw-optional').style.display='none';
+    CP_PERM_KEYS.forEach(k=>{ document.getElementById('cp-perm-'+k).checked=false; });
+    loadCustomPanelsAdmin();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function toggleCustomPanelStatus(id,status){
+  try{ await adm('admin_update_custom_panel','POST',{id,status}); toast('Updated.'); loadCustomPanelsAdmin(); }catch(e){ toast('Error: '+e.message); }
+}
+async function deleteCustomPanel(id){
+  if(!confirm('Delete this panel permanently? Its login will stop working immediately.')) return;
+  try{ await adm('admin_delete_custom_panel','POST',{id}); toast('Deleted.'); loadCustomPanelsAdmin(); }catch(e){ toast('Error: '+e.message); }
+}
+async function loginAsCustomPanel(id){
+  showLoading('Opening panel...');
+  try{
+    const headers={}; if(_adminToken) headers['x-admin-token']=_adminToken;
+    const resp=await fetch(ADM_API+'?action=admin_impersonate_custom_panel&id='+id,{headers});
+    const d=await resp.json(); if(!d.success) throw new Error(d.error);
+    hideLoading();
+    _panelToken=d.token; sessionStorage.setItem('ica_panel_token', d.token);
+    openCustomPanelOverlay(d.name, d.permissions);
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+
 async function loadChatbotFaqsAdmin(){
   const body=document.getElementById('chatbot-faqs-body');
   try{
