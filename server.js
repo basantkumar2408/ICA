@@ -189,7 +189,11 @@ const CUSTOM_PANEL_ACTION_MODULES = {
   add_gallery: 'gallery', delete_gallery: 'gallery',
   search_students_for_cert: 'certificates', search_staff_for_cert: 'certificates',
   generate_certificate: 'certificates', generate_experience_letter: 'certificates', list_certificates: 'certificates',
-  list_students: ['id_cards', 'student_attendance', 'results'] // any one of these grants the student list
+  list_students: ['id_cards', 'student_attendance', 'results'], // any one of these grants the student list
+  save_question_paper: 'question_papers', list_question_papers: 'question_papers',
+  get_question_paper: 'question_papers', delete_question_paper: 'question_papers',
+  list_duty_roster: 'duty_roster',
+  add_testimonial: 'testimonials', delete_testimonial: 'testimonials'
 };
 async function moduleGrantsAction(panel, moduleKeyOrArray) {
   if (!panel || !panel.permissions) return false;
@@ -1127,6 +1131,57 @@ if (
     if (action === 'delete_certificate' && req.method === 'POST') {
       const oid = toOid(body.id); if (!oid) return err(res, 'Missing id');
       await db.collection('certificates').deleteOne({ _id: oid });
+      return ok(res, {});
+    }
+
+    /* ═══════════ QUESTION PAPERS ═══════════
+       Two ways to create one: type questions in directly (auto-formatted, numbered, printable),
+       or upload an already-made paper (PDF/image) to store & print/download as-is. Papers can be
+       grouped (e.g. "Set A" / "Set B") for the same Class + Subject + Exam. */
+    if (action === 'save_question_paper' && req.method === 'POST') {
+      const {
+        id, title, class_name, subject, exam_name, group_name, duration_minutes, total_marks,
+        instructions, questions, file_url
+      } = body;
+      if (!title || !class_name || !subject) return err(res, 'Title, Class and Subject are required.');
+
+      let uploadedFileUrl = file_url || '';
+      if (uploadedFileUrl && uploadedFileUrl.startsWith('data:')) {
+        uploadedFileUrl = await uploadDoc(uploadedFileUrl, 'question-papers/' + class_name.replace(/[^A-Za-z0-9]+/g, '-'), title.replace(/[^A-Za-z0-9]+/g, '-').slice(0, 40) + '-' + Date.now());
+      }
+
+      const doc = {
+        title, class_name, subject, exam_name: exam_name || '', group_name: group_name || '',
+        duration_minutes: Number(duration_minutes) || 0, total_marks: Number(total_marks) || 0,
+        instructions: instructions || '', questions: Array.isArray(questions) ? questions : [],
+        file_url: uploadedFileUrl, updated_at: nowIso()
+      };
+      if (id) {
+        const oid = toOid(id); if (!oid) return err(res, 'Bad id');
+        await db.collection('question_papers').updateOne({ _id: oid }, { $set: doc });
+        return ok(res, { data: mapDoc({ ...doc, _id: oid }) });
+      } else {
+        doc.created_at = nowIso();
+        const r = await db.collection('question_papers').insertOne(doc);
+        return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
+      }
+    }
+    if (action === 'list_question_papers' && req.method === 'GET') {
+      const filter = {};
+      if (req.query.class_name) filter.class_name = req.query.class_name;
+      if (req.query.group_name) filter.group_name = req.query.group_name;
+      const list = await db.collection('question_papers').find(filter).sort({ created_at: -1 }).toArray();
+      return ok(res, { data: mapDocs(list) });
+    }
+    if (action === 'get_question_paper' && req.method === 'GET') {
+      const oid = toOid(req.query.id); if (!oid) return err(res, 'Missing id');
+      const doc = await db.collection('question_papers').findOne({ _id: oid });
+      if (!doc) return err(res, 'Not found', 404);
+      return ok(res, { data: mapDoc(doc) });
+    }
+    if (action === 'delete_question_paper' && req.method === 'POST') {
+      const oid = toOid(body.id); if (!oid) return err(res, 'Missing id');
+      await db.collection('question_papers').deleteOne({ _id: oid });
       return ok(res, {});
     }
 

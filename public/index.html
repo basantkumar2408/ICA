@@ -1068,6 +1068,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
       <div class="sb-sec">Website</div>
       <div class="sb-item" id="nav-chatbot" onclick="showPanel('chatbot')"><span class="sb-icon">&#128172;</span>Chatbot FAQs</div>
       <div class="sb-item" id="nav-custompanels" onclick="showPanel('custompanels')"><span class="sb-icon">&#128273;</span>Custom Panels</div>
+      <div class="sb-item" id="nav-qpapers" onclick="showPanel('qpapers')"><span class="sb-icon">&#128221;</span>Question Papers</div>
       <div class="sb-sec">Settings</div>
       <div class="sb-item" id="nav-sitesettings" onclick="showPanel('sitesettings')"><span class="sb-icon">&#9881;</span>Site Settings</div>
       <div class="sb-item" onclick="openAccountsPanel()"><span class="sb-icon">&#128176;</span>Accounts Panel</div>
@@ -1538,6 +1539,9 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
             <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-gallery" style="width:auto;"/> Manage Gallery</label>
             <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-certificates" style="width:auto;"/> Issue Certificates (TC/Character/Experience)</label>
             <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-id_cards" style="width:auto;"/> View Student Lists (for ID Cards)</label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-question_papers" style="width:auto;"/> Create / Print Question Papers</label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-duty_roster" style="width:auto;"/> View Staff Duty Roster</label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;"><input type="checkbox" id="cp-perm-testimonials" style="width:auto;"/> Manage Testimonials</label>
           </div>
           <button class="btn-add" onclick="saveCustomPanel()">Save Panel</button>
         </div>
@@ -1546,6 +1550,68 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
           <div class="tbl-wrap"><table class="tbl">
             <thead><tr><th>Name</th><th>Login ID</th><th>Access</th><th>Status</th><th></th></tr></thead>
             <tbody id="custompanels-body"><tr><td colspan="5" class="no-data">Loading...</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- QUESTION PAPERS -->
+      <div class="admin-panel" id="panel-qpapers">
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">Create a Question Paper</div></div>
+          <input type="hidden" id="qp-edit-id"/>
+          <div style="display:flex;gap:8px;margin-bottom:14px;background:#f1f3f7;padding:4px;border-radius:10px;max-width:400px;">
+            <button type="button" id="qp-mode-type" class="gal-filter active" style="flex:1;" onclick="qpSetMode('type')">Type Questions</button>
+            <button type="button" id="qp-mode-upload" class="gal-filter" style="flex:1;" onclick="qpSetMode('upload')">Upload Ready Paper</button>
+          </div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg"><label>Title</label><input type="text" id="qp-title" placeholder="e.g. Half-Yearly Mathematics Paper"/></div>
+            <div class="fg" style="max-width:180px;"><label>Class</label>
+              <select id="qp-class">
+                <option value="">Select Class</option>
+                <option>Nursery</option><option>LKG</option><option>UKG</option>
+                <option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option>
+                <option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option>
+              </select>
+            </div>
+            <div class="fg" style="max-width:180px;"><label>Subject</label><input type="text" id="qp-subject" placeholder="e.g. Mathematics"/></div>
+          </div>
+          <div class="fg-row" style="flex-wrap:wrap;">
+            <div class="fg" style="max-width:200px;"><label>Exam Name</label><input type="text" id="qp-exam" placeholder="e.g. Half-Yearly Examination"/></div>
+            <div class="fg" style="max-width:180px;"><label>Group / Set <span style="font-weight:400;color:var(--muted);">(optional)</span></label><input type="text" id="qp-group" placeholder="e.g. Set A"/></div>
+            <div class="fg" style="max-width:140px;"><label>Duration (min)</label><input type="number" id="qp-duration" placeholder="e.g. 180"/></div>
+            <div class="fg" style="max-width:140px;"><label>Total Marks</label><input type="number" id="qp-totalmarks" placeholder="e.g. 100"/></div>
+          </div>
+          <div class="fg"><label>Instructions <span style="font-weight:400;color:var(--muted);">(printed at the top)</span></label><textarea id="qp-instructions" rows="2" placeholder="e.g. All questions are compulsory. Write neatly."></textarea></div>
+
+          <div id="qp-type-section">
+            <label style="font-size:12.5px;font-weight:700;display:block;margin-bottom:8px;">Questions</label>
+            <div id="qp-questions-wrap"></div>
+            <button type="button" class="btn-add" style="font-size:11px;padding:4px 10px;margin-top:6px;" onclick="qpAddQuestion()">+ Add Question</button>
+          </div>
+          <div id="qp-upload-section" style="display:none;">
+            <div class="fg">
+              <label>Upload Question Paper (PDF or Image)</label>
+              <img id="qp-file-prev" src="" style="display:none;max-width:160px;border:1px dashed var(--border);border-radius:8px;padding:4px;margin-bottom:6px;"/>
+              <input type="file" id="qp-file-input" accept="application/pdf,image/*" onchange="qpFilePreview(this)"/>
+            </div>
+          </div>
+
+          <button class="btn-add" style="margin-top:14px;" onclick="saveQuestionPaper()">Save Question Paper</button>
+        </div>
+
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title">All Question Papers</div>
+            <select class="fi" id="qp-filter-class" onchange="loadQuestionPapersAdmin()">
+              <option value="">All Classes</option>
+              <option>Nursery</option><option>LKG</option><option>UKG</option>
+              <option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option>
+              <option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option>
+            </select>
+          </div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Title</th><th>Class</th><th>Subject</th><th>Group/Set</th><th>Marks</th><th>Actions</th></tr></thead>
+            <tbody id="qpapers-body"><tr><td colspan="6" class="no-data">Loading...</td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -2231,7 +2297,7 @@ async function doLogin(){
 }
 
 function doLogout(auto){endSession();document.getElementById('adminOverlay').classList.remove('show');toast(auto?'Auto-logged out due to inactivity.':'Logged out.');}
-const TITLES={dashboard:'Dashboard',admissions:'Admission Applications',enquiries:'Parent Enquiries',notices:'Notices',gallery:'Gallery',testimonials:'Testimonials',formbuilder:'Admission Form Builder',customforms:'Custom Forms',results:'Examination',hiring:'Hiring / Recruitment',duty:'Staff Duty Roster',attendance:'Student Attendance',staffid:'Staff ID Cards',studentid:'Student ID Cards',tc:'Transfer Certificate',character:'Character Certificate',experience:'Experience Letter',allcerts:'All Certificates',chatbot:'Chatbot FAQs',custompanels:'Custom Panels',sitesettings:'Site Settings',password:'Change Password'};
+const TITLES={dashboard:'Dashboard',admissions:'Admission Applications',enquiries:'Parent Enquiries',notices:'Notices',gallery:'Gallery',testimonials:'Testimonials',formbuilder:'Admission Form Builder',customforms:'Custom Forms',results:'Examination',hiring:'Hiring / Recruitment',duty:'Staff Duty Roster',attendance:'Student Attendance',staffid:'Staff ID Cards',studentid:'Student ID Cards',tc:'Transfer Certificate',character:'Character Certificate',experience:'Experience Letter',allcerts:'All Certificates',chatbot:'Chatbot FAQs',custompanels:'Custom Panels',qpapers:'Question Papers',sitesettings:'Site Settings',password:'Change Password'};
 
 /* ═══════════════ ACCOUNTS PANEL (Fees, Invoices, Staff Salary) ═══════════════ */
 async function accGet(action, params){
@@ -2316,8 +2382,8 @@ async function panelApi(action, method, body){
   const r=await fetch(API+'?action='+action,o);
   const d=await r.json(); if(!d.success) throw new Error(d.error||'Error'); return d;
 }
-const CP_MODULE_TITLES={student_attendance:'Student Attendance',results:'Results Entry',notices:'Notices',gallery:'Gallery',certificates:'Certificates',id_cards:'Student Lists'};
-const CP_MODULE_ICONS={student_attendance:'&#9989;',results:'&#128202;',notices:'&#128227;',gallery:'&#128247;',certificates:'&#128196;',id_cards:'&#127891;'};
+const CP_MODULE_TITLES={student_attendance:'Student Attendance',results:'Results Entry',notices:'Notices',gallery:'Gallery',certificates:'Certificates',id_cards:'Student Lists',question_papers:'Question Papers',duty_roster:'Duty Roster',testimonials:'Testimonials'};
+const CP_MODULE_ICONS={student_attendance:'&#9989;',results:'&#128202;',notices:'&#128227;',gallery:'&#128247;',certificates:'&#128196;',id_cards:'&#127891;',question_papers:'&#128221;',duty_roster:'&#128197;',testimonials:'&#11088;'};
 function openCustomPanelOverlay(name, permissions){
   const granted = CP_PERM_KEYS.filter(k=>permissions&&permissions[k]);
   const overlay=document.getElementById('customPanelOverlay');
@@ -2356,6 +2422,9 @@ function showCustomPanelModule(key){
   else if(key==='gallery') renderCpGallery(box);
   else if(key==='certificates') renderCpCertificates(box);
   else if(key==='id_cards') renderCpIdCards(box);
+  else if(key==='question_papers') renderCpQuestionPapers(box);
+  else if(key==='duty_roster') renderCpDutyRoster(box);
+  else if(key==='testimonials') renderCpTestimonials(box);
 }
 /* — Student Attendance — */
 function renderCpAttendance(box){
@@ -2592,6 +2661,134 @@ async function cpiLoad(){
     const d=await resp.json(); if(!d.success) throw new Error(d.error);
     body.innerHTML = (d.data||[]).map(s=>`<tr><td>${esc(s.student_name)}</td><td>${esc(s.application_number)}</td><td>${esc(s.section||'-')}</td></tr>`).join('') || '<tr><td colspan="3" class="no-data">No students found.</td></tr>';
   }catch(e){ body.innerHTML='<tr><td colspan="3" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+/* — Question Papers (simplified: type-only, no upload, for custom panels) — */
+let _cpqQuestions=[];
+function renderCpQuestionPapers(box){
+  _cpqQuestions=[{question_text:'',type:'short',marks:'',options:['','','','']}];
+  box.innerHTML = `<div class="acard">
+    <div class="acard-head"><div class="acard-title">Create a Question Paper</div></div>
+    <div class="fg-row" style="flex-wrap:wrap;">
+      <div class="fg"><label>Title</label><input type="text" id="cpq-title"/></div>
+      <div class="fg" style="max-width:180px;"><label>Class</label>
+        <select id="cpq-class"><option value="">Select Class</option>
+          <option>Nursery</option><option>LKG</option><option>UKG</option>
+          <option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option>
+          <option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option>
+        </select>
+      </div>
+      <div class="fg" style="max-width:180px;"><label>Subject</label><input type="text" id="cpq-subject"/></div>
+    </div>
+    <div class="fg-row" style="flex-wrap:wrap;">
+      <div class="fg" style="max-width:180px;"><label>Group / Set</label><input type="text" id="cpq-group" placeholder="e.g. Set A"/></div>
+      <div class="fg" style="max-width:140px;"><label>Duration (min)</label><input type="number" id="cpq-duration"/></div>
+      <div class="fg" style="max-width:140px;"><label>Total Marks</label><input type="number" id="cpq-totalmarks"/></div>
+    </div>
+    <div id="cpq-questions-wrap"></div>
+    <button type="button" class="btn-add" style="font-size:11px;padding:4px 10px;" onclick="_cpqQuestions.push({question_text:'',type:'short',marks:'',options:['','','','']});cpqRenderQuestions();">+ Add Question</button>
+    <div style="margin-top:14px;"><button class="btn-add" onclick="cpqSave()">Save Question Paper</button></div>
+  </div>
+  <div class="acard"><div class="acard-head"><div class="acard-title">Papers for This Class</div>
+    <select class="fi" id="cpq-filter-class" onchange="cpqLoadList()"><option value="">Select Class</option>
+      <option>Nursery</option><option>LKG</option><option>UKG</option>
+      <option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option>
+      <option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option>
+    </select></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Title</th><th>Subject</th><th>Group</th><th></th></tr></thead><tbody id="cpq-list-body"><tr><td colspan="4" class="no-data">Select a class.</td></tr></tbody></table></div>
+  </div>`;
+  cpqRenderQuestions();
+}
+function cpqRenderQuestions(){
+  const wrap=document.getElementById('cpq-questions-wrap'); if(!wrap) return;
+  wrap.innerHTML=_cpqQuestions.map((q,i)=>`<div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:6px;background:#f8fafc;">
+    <div style="display:flex;gap:6px;">
+      <span style="font-weight:700;color:var(--muted);padding-top:6px;">Q${i+1}.</span>
+      <textarea rows="2" placeholder="Question" style="flex:1;padding:5px 7px;border:1px solid var(--border);border-radius:6px;font-size:12px;" onchange="_cpqQuestions[${i}].question_text=this.value;">${esc(q.question_text)}</textarea>
+      <input type="number" placeholder="Marks" value="${q.marks}" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:6px;font-size:11px;" onchange="_cpqQuestions[${i}].marks=this.value;"/>
+      <button type="button" class="btn-del" onclick="_cpqQuestions.splice(${i},1);cpqRenderQuestions();">X</button>
+    </div>
+  </div>`).join('');
+}
+async function cpqSave(){
+  const title=document.getElementById('cpq-title').value.trim();
+  const class_name=document.getElementById('cpq-class').value;
+  const subject=document.getElementById('cpq-subject').value.trim();
+  if(!title||!class_name||!subject){ toast('Title, Class and Subject are required.'); return; }
+  showLoading('Saving...');
+  try{
+    await panelApi('save_question_paper','POST',{
+      title, class_name, subject, group_name:document.getElementById('cpq-group').value.trim(),
+      duration_minutes:document.getElementById('cpq-duration').value, total_marks:document.getElementById('cpq-totalmarks').value,
+      questions:_cpqQuestions.filter(q=>q.question_text.trim())
+    });
+    hideLoading(); toast('Question paper saved!');
+    document.getElementById('cpq-title').value=''; _cpqQuestions=[{question_text:'',type:'short',marks:'',options:['','','','']}]; cpqRenderQuestions();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function cpqLoadList(){
+  const cls=document.getElementById('cpq-filter-class').value;
+  const body=document.getElementById('cpq-list-body');
+  if(!cls){ body.innerHTML='<tr><td colspan="4" class="no-data">Select a class.</td></tr>'; return; }
+  try{
+    const r=await panelApi('list_question_papers&class_name='+encodeURIComponent(cls));
+    const list=r.data||[];
+    body.innerHTML=list.length?list.map(p=>`<tr><td>${esc(p.title)}</td><td>${esc(p.subject)}</td><td>${esc(p.group_name||'-')}</td><td><button class="btn-pdf" onclick='printQuestionPaper(${JSON.stringify(p).replace(/'/g,"&apos;")})'>Print</button></td></tr>`).join(''):'<tr><td colspan="4" class="no-data">No papers yet.</td></tr>';
+  }catch(e){ body.innerHTML='<tr><td colspan="4" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+/* — Duty Roster (read-only) — */
+function renderCpDutyRoster(box){
+  box.innerHTML=`<div class="acard"><div class="acard-head"><div class="acard-title">Staff Duty Roster</div></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Day</th><th>Shift</th><th>Staff</th><th>Class</th></tr></thead><tbody id="cpd-body"><tr><td colspan="4" class="no-data">Loading...</td></tr></tbody></table></div>
+  </div>`;
+  cpdLoad();
+}
+async function cpdLoad(){
+  const body=document.getElementById('cpd-body');
+  try{
+    const r=await panelApi('list_duty_roster');
+    const list=r.data||[];
+    body.innerHTML=list.length?list.map(d=>`<tr><td>${esc(d.day)}</td><td>${esc(d.shift)}</td><td>${esc(d.staff_name||'-')}</td><td>${esc(d.class_name||'-')}</td></tr>`).join(''):'<tr><td colspan="4" class="no-data">No roster set yet.</td></tr>';
+  }catch(e){ body.innerHTML='<tr><td colspan="4" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+/* — Testimonials — */
+function renderCpTestimonials(box){
+  box.innerHTML=`<div class="acard"><div class="acard-head"><div class="acard-title">Add a Testimonial</div></div>
+    <div class="fg-row" style="flex-wrap:wrap;">
+      <div class="fg"><label>Name</label><input type="text" id="cpt-name"/></div>
+      <div class="fg" style="max-width:160px;"><label>Role</label><input type="text" id="cpt-role" placeholder="Parent"/></div>
+      <div class="fg" style="max-width:120px;"><label>Rating (1-5)</label><input type="number" id="cpt-rating" min="1" max="5" value="5"/></div>
+    </div>
+    <div class="fg"><label>Message</label><textarea id="cpt-message" rows="3"></textarea></div>
+    <button class="btn-add" onclick="cptSave()">Add Testimonial</button>
+  </div>
+  <div class="acard"><div class="acard-head"><div class="acard-title">All Testimonials</div></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Message</th><th></th></tr></thead><tbody id="cpt-body"><tr><td colspan="3" class="no-data">Loading...</td></tr></tbody></table></div>
+  </div>`;
+  cptLoad();
+}
+async function cptLoad(){
+  const body=document.getElementById('cpt-body');
+  try{
+    const r=await api('get_testimonials');
+    const list=r.data||[];
+    body.innerHTML=list.length?list.map(t=>`<tr><td>${esc(t.name)}</td><td style="font-size:12px;">${esc((t.message||'').slice(0,80))}</td><td><button class="btn-del" onclick="cptDelete('${t.id}')">Delete</button></td></tr>`).join(''):'<tr><td colspan="3" class="no-data">No testimonials yet.</td></tr>';
+  }catch(e){ body.innerHTML='<tr><td colspan="3" class="no-data">Error loading.</td></tr>'; }
+}
+async function cptSave(){
+  const name=document.getElementById('cpt-name').value.trim();
+  const message=document.getElementById('cpt-message').value.trim();
+  if(!name||!message){ toast('Name and message are required.'); return; }
+  showLoading('Saving...');
+  try{
+    await panelApi('add_testimonial','POST',{name, role:document.getElementById('cpt-role').value||'Parent', message, rating:document.getElementById('cpt-rating').value});
+    hideLoading(); toast('Testimonial added!');
+    document.getElementById('cpt-name').value='';document.getElementById('cpt-message').value='';
+    cptLoad();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function cptDelete(id){
+  if(!confirm('Delete this testimonial?')) return;
+  try{ await panelApi('delete_testimonial','POST',{id}); toast('Deleted.'); cptLoad(); }catch(e){ toast('Error: '+e.message); }
 }
 
 function doAccLogout(){
@@ -3611,6 +3808,7 @@ async function showPanel(id){
   if(id==='allcerts')await loadAllCertificates();
   if(id==='chatbot')await loadChatbotFaqsAdmin();
   if(id==='custompanels')await loadCustomPanelsAdmin();
+  if(id==='qpapers'){ if(!_qpQuestions.length) resetQuestionPaperForm(); await loadQuestionPapersAdmin(); }
   if(id==='sitesettings')await loadSiteSettings();
 }
 let _admOpen=false;
@@ -7496,9 +7694,174 @@ async function sendChatbotMessage(){
 /* ── Admin: manage Chatbot FAQs ── */
 let _chatbotFaqsAdmin=[];
 /* ═══════════════ CUSTOM PANELS (admin-created staff/teacher logins with granular access) ═══════════════ */
-const CP_PERM_KEYS=['student_attendance','results','notices','gallery','certificates','id_cards'];
-const CP_PERM_LABELS={student_attendance:'Student Attendance',results:'Results Entry',notices:'Notices',gallery:'Gallery',certificates:'Certificates',id_cards:'Student Lists'};
+const CP_PERM_KEYS=['student_attendance','results','notices','gallery','certificates','id_cards','question_papers','duty_roster','testimonials'];
+const CP_PERM_LABELS={student_attendance:'Student Attendance',results:'Results Entry',notices:'Notices',gallery:'Gallery',certificates:'Certificates',id_cards:'Student Lists',question_papers:'Question Papers',duty_roster:'Duty Roster',testimonials:'Testimonials'};
 let _customPanelsCache=[];
+/* ═══════════════ QUESTION PAPERS ═══════════════ */
+let _qpMode='type'; let _qpQuestions=[]; let _qpFileData='';
+function qpSetMode(mode){
+  _qpMode=mode;
+  document.getElementById('qp-mode-type').classList.toggle('active', mode==='type');
+  document.getElementById('qp-mode-upload').classList.toggle('active', mode==='upload');
+  document.getElementById('qp-type-section').style.display = mode==='type' ? 'block' : 'none';
+  document.getElementById('qp-upload-section').style.display = mode==='upload' ? 'block' : 'none';
+}
+function qpNewQuestion(){ return {question_text:'', type:'short', marks:'', options:['','','','']}; }
+function qpAddQuestion(){ _qpQuestions.push(qpNewQuestion()); qpRenderQuestions(); }
+function qpRenderQuestions(){
+  const wrap=document.getElementById('qp-questions-wrap');
+  if(!_qpQuestions.length) _qpQuestions=[qpNewQuestion()];
+  wrap.innerHTML = _qpQuestions.map((q,i)=>`
+    <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:#f8fafc;">
+      <div style="display:flex;gap:8px;margin-bottom:6px;">
+        <span style="font-weight:700;color:var(--muted);padding-top:8px;">Q${i+1}.</span>
+        <textarea placeholder="Question text" rows="2" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;" onchange="_qpQuestions[${i}].question_text=this.value;">${esc(q.question_text)}</textarea>
+        <select style="width:100px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" onchange="_qpQuestions[${i}].type=this.value;qpRenderQuestions();">
+          <option value="short" ${q.type==='short'?'selected':''}>Short Ans</option>
+          <option value="long" ${q.type==='long'?'selected':''}>Long Ans</option>
+          <option value="mcq" ${q.type==='mcq'?'selected':''}>MCQ</option>
+        </select>
+        <input type="number" placeholder="Marks" value="${q.marks}" style="width:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;" onchange="_qpQuestions[${i}].marks=this.value;"/>
+        <button type="button" class="btn-del" onclick="_qpQuestions.splice(${i},1);qpRenderQuestions();">X</button>
+      </div>
+      ${q.type==='mcq'?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-left:26px;">
+        ${[0,1,2,3].map(oi=>`<input type="text" placeholder="Option ${String.fromCharCode(65+oi)}" value="${esc(q.options[oi]||'')}" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;" onchange="_qpQuestions[${i}].options[${oi}]=this.value;"/>`).join('')}
+      </div>`:''}
+    </div>`).join('');
+}
+function qpFilePreview(input){
+  const f=input.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    _qpFileData=e.target.result;
+    const prev=document.getElementById('qp-file-prev');
+    if(f.type.startsWith('image/')){ prev.src=_qpFileData; prev.style.display='block'; }
+    else { prev.style.display='none'; toast('PDF selected: '+f.name); }
+  };
+  reader.readAsDataURL(f);
+}
+function resetQuestionPaperForm(){
+  document.getElementById('qp-edit-id').value='';
+  document.getElementById('qp-title').value='';document.getElementById('qp-class').value='';document.getElementById('qp-subject').value='';
+  document.getElementById('qp-exam').value='';document.getElementById('qp-group').value='';document.getElementById('qp-duration').value='';document.getElementById('qp-totalmarks').value='';
+  document.getElementById('qp-instructions').value='';
+  document.getElementById('qp-file-input').value=''; document.getElementById('qp-file-prev').style.display='none';
+  _qpFileData=''; _qpQuestions=[qpNewQuestion()]; qpRenderQuestions(); qpSetMode('type');
+}
+async function saveQuestionPaper(){
+  const id=document.getElementById('qp-edit-id').value;
+  const title=document.getElementById('qp-title').value.trim();
+  const class_name=document.getElementById('qp-class').value;
+  const subject=document.getElementById('qp-subject').value.trim();
+  if(!title||!class_name||!subject){ toast('Title, Class and Subject are required.'); return; }
+  const payload={
+    id: id||undefined, title, class_name, subject,
+    exam_name: document.getElementById('qp-exam').value.trim(),
+    group_name: document.getElementById('qp-group').value.trim(),
+    duration_minutes: document.getElementById('qp-duration').value,
+    total_marks: document.getElementById('qp-totalmarks').value,
+    instructions: document.getElementById('qp-instructions').value
+  };
+  if(_qpMode==='upload'){
+    if(!_qpFileData && !id){ toast('Choose a file to upload.'); return; }
+    if(_qpFileData) payload.file_url=_qpFileData;
+    payload.questions=[];
+  } else {
+    payload.questions = _qpQuestions.filter(q=>q.question_text.trim());
+  }
+  showLoading('Saving...');
+  try{
+    await adm('save_question_paper','POST',payload);
+    hideLoading(); toast('Question paper saved!');
+    resetQuestionPaperForm();
+    loadQuestionPapersAdmin();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+let _qpapersCache=[];
+async function loadQuestionPapersAdmin(){
+  const body=document.getElementById('qpapers-body');
+  const cls=document.getElementById('qp-filter-class').value;
+  body.innerHTML='<tr><td colspan="6" class="no-data">Loading...</td></tr>';
+  try{
+    const r=await adm('list_question_papers'+(cls?('&class_name='+encodeURIComponent(cls)):''));
+    _qpapersCache=r.data||[];
+    if(!_qpapersCache.length){ body.innerHTML='<tr><td colspan="6" class="no-data">No question papers yet.</td></tr>'; return; }
+    body.innerHTML=_qpapersCache.map(p=>`<tr>
+      <td style="font-weight:600;">${esc(p.title)}</td><td>${esc(p.class_name)}</td><td>${esc(p.subject)}</td>
+      <td>${esc(p.group_name||'-')}</td><td>${p.total_marks||'-'}</td>
+      <td class="tbl-actions">
+        <button class="btn-pdf" onclick='printQuestionPaper(${JSON.stringify(p).replace(/'/g,"&apos;")})'>Print / Download</button>
+        <button class="btn-vw" onclick='editQuestionPaper(${JSON.stringify(p).replace(/'/g,"&apos;")})'>Edit</button>
+        <button class="btn-del" onclick="deleteQuestionPaperRecord('${p.id}')">Delete</button>
+      </td>
+    </tr>`).join('');
+  }catch(e){ body.innerHTML='<tr><td colspan="6" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+function editQuestionPaper(p){
+  document.getElementById('qp-edit-id').value=p.id;
+  document.getElementById('qp-title').value=p.title;
+  document.getElementById('qp-class').value=p.class_name;
+  document.getElementById('qp-subject').value=p.subject;
+  document.getElementById('qp-exam').value=p.exam_name||'';
+  document.getElementById('qp-group').value=p.group_name||'';
+  document.getElementById('qp-duration').value=p.duration_minutes||'';
+  document.getElementById('qp-totalmarks').value=p.total_marks||'';
+  document.getElementById('qp-instructions').value=p.instructions||'';
+  if(p.file_url){
+    qpSetMode('upload');
+    document.getElementById('qp-file-prev').src=p.file_url; document.getElementById('qp-file-prev').style.display='block';
+  } else {
+    qpSetMode('type');
+    _qpQuestions = (p.questions&&p.questions.length) ? JSON.parse(JSON.stringify(p.questions)).map(q=>({...q,options:q.options||['','','','']})) : [qpNewQuestion()];
+    qpRenderQuestions();
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+async function deleteQuestionPaperRecord(id){
+  if(!confirm('Delete this question paper?')) return;
+  try{ await adm('delete_question_paper','POST',{id}); toast('Deleted.'); loadQuestionPapersAdmin(); }catch(e){ toast('Error: '+e.message); }
+}
+function printQuestionPaper(p){
+  if(p.file_url){
+    // An uploaded ready-made paper — just open the file itself.
+    window.open(p.file_url,'_blank');
+    return;
+  }
+  const w=window.open('','_blank');
+  let qNum=1;
+  const questionsHtml=(p.questions||[]).map(q=>{
+    let optHtml='';
+    if(q.type==='mcq' && q.options){
+      optHtml = '<div class="qp-opts">'+q.options.filter(o=>o).map((o,oi)=>`<span>(${String.fromCharCode(65+oi)}) ${esc(o)}</span>`).join('')+'</div>';
+    }
+    const row = `<div class="qp-q"><div class="qp-qtext"><b>${qNum}.</b> ${esc(q.question_text)} <span class="qp-marks">[${q.marks||'-'}]</span></div>${optHtml}</div>`;
+    qNum++;
+    return row;
+  }).join('');
+  w.document.write(`<html><head><title>${esc(p.title)}</title><style>
+    body{font-family:Georgia,serif;padding:40px 50px;max-width:800px;margin:auto;color:#1a1a1a;}
+    .qp-head{text-align:center;border-bottom:2px solid #0a1628;padding-bottom:10px;margin-bottom:16px;}
+    .qp-head h1{margin:0;font-size:20px;color:#0a1628;}
+    .qp-head p{margin:2px 0;font-size:11px;color:#555;}
+    .qp-meta{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:6px;}
+    .qp-title{text-align:center;font-size:16px;font-weight:700;text-decoration:underline;margin:14px 0;}
+    .qp-instr{font-size:11.5px;color:#555;background:#f8fafc;border:1px solid #eee;border-radius:6px;padding:8px 12px;margin-bottom:18px;}
+    .qp-q{margin-bottom:14px;font-size:13.5px;line-height:1.6;}
+    .qp-qtext{}
+    .qp-marks{float:right;color:#666;font-size:11.5px;}
+    .qp-opts{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:6px 0 0 20px;font-size:12.5px;color:#333;}
+    @media print{ .no-print{display:none!important;} }
+  </style></head><body>
+    <div class="qp-head"><h1>IDEAL CHILDREN ACADEMY</h1><p>Batrauliya, Paharpur, East Champaran, Bihar - 845458</p></div>
+    <div class="qp-meta"><span>Class: ${esc(p.class_name)}</span><span>Subject: ${esc(p.subject)}</span><span>Time: ${p.duration_minutes?p.duration_minutes+' min':'-'}</span><span>Max Marks: ${p.total_marks||'-'}</span></div>
+    <div class="qp-title">${esc(p.title)}${p.exam_name?(' — '+esc(p.exam_name)):''}${p.group_name?(' ('+esc(p.group_name)+')'):''}</div>
+    ${p.instructions?`<div class="qp-instr"><b>Instructions:</b> ${esc(p.instructions)}</div>`:''}
+    ${questionsHtml || '<p style="text-align:center;color:#999;">No questions added.</p>'}
+    <div class="no-print" style="text-align:center;margin-top:24px;"><button onclick="window.print()" style="padding:10px 24px;background:#0a1628;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print</button></div>
+  </body></html>`);
+  w.document.close(); w.focus();
+}
+
 async function loadCustomPanelsAdmin(){
   const body=document.getElementById('custompanels-body');
   try{
