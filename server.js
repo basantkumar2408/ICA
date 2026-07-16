@@ -990,7 +990,7 @@ if (
       const ops = records.map(r => ({
         updateOne: {
           filter: { application_number: r.application_number, date },
-          update: { $set: { application_number: r.application_number, staff_name: r.staff_name || '', date, status: r.status || 'present', updated_at: nowIso() } },
+          update: { $set: { application_number: r.application_number, staff_name: r.staff_name || '', date, status: r.status || 'present', leave_type: r.status === 'leave' ? (r.leave_type || 'Unspecified') : '', updated_at: nowIso() } },
           upsert: true
         }
       }));
@@ -1005,6 +1005,48 @@ if (
       if (month) filter.date = { $regex: '^' + month };
       const data = await db.collection('staff_attendance').find(filter).sort({ date: 1 }).toArray();
       return ok(res, { data: mapDocs(data) });
+    }
+    // The configured Leave Policy (types + annual quota) — used to populate the Leave Type
+    // dropdown when marking attendance, and to show quota usage in the Accounts overview.
+    if (action === 'acc_get_leave_policy' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const row = await db.collection('settings').findOne({ key: 'leave_policy' });
+      let policy = [];
+      try { policy = JSON.parse(row && row.value || '[]'); } catch (e) { policy = []; }
+      return ok(res, { data: policy });
+    }
+    // Accounts Panel — who's on leave today, and a month-wise leave summary by type, for every
+    // staff member (teaching + non-teaching) in one place.
+    if (action === 'acc_leave_overview' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const date = req.query.date || new Date().toISOString().slice(0, 10);
+      const month = req.query.month || date.slice(0, 7);
+      const [todayRecords, monthRecords, allStaff] = await Promise.all([
+        db.collection('staff_attendance').find({ date, status: { $in: ['leave', 'absent', 'half_day'] } }).toArray(),
+        db.collection('staff_attendance').find({ date: { $regex: '^' + month } }).toArray(),
+        db.collection('staff').find({}).toArray()
+      ]);
+      const staffMap = {}; allStaff.forEach(s => { staffMap[s.application_number] = s; });
+      const todayList = todayRecords.map(r => ({
+        application_number: r.application_number, staff_name: r.staff_name,
+        status: r.status, leave_type: r.leave_type || '',
+        position: (staffMap[r.application_number] && staffMap[r.application_number].position) || ''
+      }));
+      // Month-wise breakdown per staff: how many present / half-day / absent / leave (by type) days.
+      const byStaff = {};
+      monthRecords.forEach(r => {
+        const key = r.application_number;
+        if (!byStaff[key]) byStaff[key] = { application_number: key, staff_name: r.staff_name, present: 0, half_day: 0, absent: 0, leave: 0, leave_types: {} };
+        if (r.status === 'present') byStaff[key].present++;
+        else if (r.status === 'half_day') byStaff[key].half_day++;
+        else if (r.status === 'absent') byStaff[key].absent++;
+        else if (r.status === 'leave') {
+          byStaff[key].leave++;
+          const t = r.leave_type || 'Unspecified';
+          byStaff[key].leave_types[t] = (byStaff[key].leave_types[t] || 0) + 1;
+        }
+      });
+      return ok(res, { data: { date, month, today_on_leave: todayList, monthly: Object.values(byStaff) } });
     }
     // Suggests a salary for the month based on Present/Leave/Absent days actually marked —
     // per-day rate = (Basic + HRA) / days in month. Accountant can still override the final
@@ -1025,6 +1067,7 @@ if (
           days_in_month: calc.days_in_month, marked_days: calc.marked_days, present_days: presentDays, half_days: halfDays, absent_days: absentDays,
           gross_pay: (staff.basic_pay || 0) + (staff.hra || 0), suggested_gross: calc.gross,
           pf_amount: calc.pf_amount, esi_amount: calc.esi_amount, advance_deduction: calc.advance_deduction,
+          unpaid_leave_days: calc.unpaid_leave_days, leave_breakdown: calc.leave_breakdown,
           suggested_net: calc.net, _advance_recoveries: calc.advance_recoveries
         }
       });
@@ -2065,12 +2108,44 @@ if (
 
     // Helper — same attendance-based salary logic used by acc_attendance_salary_suggestion,
     // reused here so Bulk Payroll and the Salary Register always agree with each other.
+    // Compares leave TAKEN so far this calendar year (by type) against the quota configured in
+    // Admin Panel → Site Settings → Leave Policy. Only the days that push a staff member OVER
+    // their yearly quota for that leave type become unpaid — leave within quota is never deducted.
+    async function computeLeaveDeduction(db, application_number, month) {
+      const policyRow = await db.collection('settings').findOne({ key: 'leave_policy' });
+      let policy = [];
+      try { policy = JSON.parse(policyRow && policyRow.value || '[]'); } catch (e) { policy = []; }
+      if (!policy.length) return { unpaid_leave_days: 0, breakdown: [] };
+      const year = month.split('-')[0];
+      const yearRecords = await db.collection('staff_attendance').find({
+        application_number, status: 'leave', date: { $regex: '^' + year }
+      }).toArray();
+      const byType = {};
+      yearRecords.forEach(r => {
+        const t = r.leave_type || 'Unspecified';
+        (byType[t] = byType[t] || []).push(r.date);
+      });
+      let unpaidDays = 0;
+      const breakdown = [];
+      policy.forEach(p => {
+        const type = p.type, quota = Number(p.days) || 0;
+        const dates = byType[type] || [];
+        const usedYtd = dates.length;
+        const usedThisMonth = dates.filter(d => d.startsWith(month)).length;
+        const excessTotal = Math.max(0, usedYtd - quota);
+        const excessThisMonth = Math.min(usedThisMonth, excessTotal);
+        if (usedYtd || excessThisMonth) breakdown.push({ type, quota_days: quota, used_ytd: usedYtd, excess_this_month: excessThisMonth });
+        unpaidDays += excessThisMonth;
+      });
+      return { unpaid_leave_days: unpaidDays, breakdown };
+    }
     async function computeSalaryForStaff(staff, month) {
       const records = await db.collection('staff_attendance').find({ application_number: staff.application_number, date: { $regex: '^' + month } }).toArray();
       const daysInMonth = new Date(Number(month.split('-')[0]), Number(month.split('-')[1]), 0).getDate();
       const absentDays = records.filter(r => r.status === 'absent').length;
       const halfDays = records.filter(r => r.status === 'half_day').length;
-      const deductionDays = absentDays + (halfDays * 0.5);
+      const leaveInfo = await computeLeaveDeduction(db, staff.application_number, month);
+      const deductionDays = absentDays + (halfDays * 0.5) + leaveInfo.unpaid_leave_days;
       const gross = (staff.basic_pay || 0) + (staff.hra || 0);
       const perDay = gross / daysInMonth;
       // No attendance marked at all yet → assume full month present (don't unfairly zero out salary).
@@ -2093,7 +2168,9 @@ if (
       const net = Math.max(0, netBeforeAdvance - advanceDeduction);
       return {
         gross: suggestedGross, pf_amount: pfAmount, esi_amount: esiAmount, advance_deduction: advanceDeduction,
-        advance_recoveries: advanceRecoveries, net, marked_days: records.length, absent_days: absentDays, days_in_month: daysInMonth
+        advance_recoveries: advanceRecoveries, net, marked_days: records.length, absent_days: absentDays,
+        half_days: halfDays, unpaid_leave_days: leaveInfo.unpaid_leave_days, leave_breakdown: leaveInfo.breakdown,
+        days_in_month: daysInMonth
       };
     }
     // Applies the advance recoveries computed above — call this AFTER the salary payment is saved.
@@ -2236,6 +2313,84 @@ if (
       return ok(res, { data: mapDocs(data), total });
     }
 
+    /* ═══════════ PF WITHDRAWAL & FULL SETTLEMENT ═══════════ */
+    // Live PF balance = everything the employee contributed + everything the school matched,
+    // minus anything already withdrawn.
+    async function getPfBalance(db, application_number) {
+      const [payments, contributions, withdrawals] = await Promise.all([
+        db.collection('salary_payments').find({ application_number }).toArray(),
+        db.collection('pf_school_contributions').find({ application_number }).toArray(),
+        db.collection('pf_withdrawals').find({ application_number }).toArray()
+      ]);
+      const employee_total = payments.reduce((s, p) => s + (p.pf_amount || 0), 0);
+      const employer_total = contributions.reduce((s, c) => s + (c.employer_pf_amount || 0), 0);
+      const withdrawn_total = withdrawals.reduce((s, w) => s + (w.amount || 0), 0);
+      const balance = Math.max(0, employee_total + employer_total - withdrawn_total);
+      return { employee_total, employer_total, withdrawn_total, balance };
+    }
+    if (action === 'acc_get_pf_balance' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const application_number = req.query.application_number;
+      if (!application_number) return err(res, 'Missing application_number.');
+      const staff = await db.collection('staff').findOne({ application_number });
+      if (!staff) return err(res, 'Staff not found.');
+      const bal = await getPfBalance(db, application_number);
+      return ok(res, { data: { ...bal, staff_name: staff.name, status: staff.status || 'active' } });
+    }
+    // A staff member withdraws part of their accumulated PF (medical need, home construction,
+    // etc — same idea as an EPFO partial withdrawal). Generates its own slip number.
+    if (action === 'acc_add_pf_withdrawal' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const { application_number, amount, reason } = body;
+      if (!application_number || !amount) return err(res, 'Staff and amount are required.');
+      const staff = await db.collection('staff').findOne({ application_number });
+      if (!staff) return err(res, 'Staff not found.');
+      const bal = await getPfBalance(db, application_number);
+      const amt = Number(amount);
+      if (amt > bal.balance) return err(res, `Cannot withdraw Rs. ${amt.toLocaleString('en-IN')} — only Rs. ${bal.balance.toLocaleString('en-IN')} is available in their PF balance.`);
+      const slipNo = 'ICA-PFW-' + String(new Date().getFullYear()) + '-' + Date.now().toString().slice(-5);
+      const doc = {
+        application_number, staff_name: staff.name, amount: amt, reason: reason || '',
+        type: 'partial', slip_no: slipNo, date: nowIso(), created_at: nowIso()
+      };
+      const r = await db.collection('pf_withdrawals').insertOne(doc);
+      return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
+    }
+    // Full & Final PF Settlement — used when a staff member permanently leaves the school.
+    // Withdraws their ENTIRE remaining PF balance in one go and blocks their staff record so
+    // they can no longer be selected for future payroll runs.
+    if (action === 'acc_full_pf_settlement' && req.method === 'POST') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const { application_number, reason } = body;
+      if (!application_number) return err(res, 'Missing application_number.');
+      const staff = await db.collection('staff').findOne({ application_number });
+      if (!staff) return err(res, 'Staff not found.');
+      const bal = await getPfBalance(db, application_number);
+      if (bal.balance <= 0) return err(res, 'This staff member has no remaining PF balance to settle.');
+      // Recover any outstanding Loan/Advance out of this final settlement first — an exiting
+      // employee should never leave with unpaid dues still on the books.
+      const rec = await computeAdvanceRecovery(db, application_number, bal.balance);
+      const finalAmount = Math.max(0, bal.balance - rec.advance_deduction);
+      const slipNo = 'ICA-PFFS-' + String(new Date().getFullYear()) + '-' + Date.now().toString().slice(-5);
+      const doc = {
+        application_number, staff_name: staff.name, amount: finalAmount, gross_pf_balance: bal.balance,
+        advance_deduction: rec.advance_deduction,
+        reason: reason || 'Full & Final Settlement — Staff Exit', type: 'full_settlement',
+        slip_no: slipNo, date: nowIso(), created_at: nowIso()
+      };
+      const r = await db.collection('pf_withdrawals').insertOne(doc);
+      await applyAdvanceRecoveries(db, rec.advance_recoveries);
+      await db.collection('staff').updateOne({ application_number }, { $set: { status: 'blocked', exit_date: nowIso(), updated_at: nowIso() } });
+      return ok(res, { data: mapDoc({ ...doc, _id: r.insertedId }) });
+    }
+    if (action === 'acc_list_pf_withdrawals' && req.method === 'GET') {
+      if (!(await requireAccounts(req, res, db))) return;
+      const filter = {};
+      if (req.query.application_number) filter.application_number = req.query.application_number;
+      const data = await db.collection('pf_withdrawals').find(filter).sort({ created_at: -1 }).toArray();
+      return ok(res, { data: mapDocs(data) });
+    }
+
     // Salary slip for one month OR a range (e.g. 6-month / 12-month slip)
     if (action === 'acc_salary_slip' && req.method === 'GET') {
       if (!(await requireAccounts(req, res, db))) return;
@@ -2291,6 +2446,7 @@ app.get('/verify-id', async (req, res) => {
     else if (oid && type === 'certificate') record = await db.collection('certificates').findOne({ _id: oid });
     else if (oid && type === 'admission') record = await db.collection('admissions').findOne({ _id: oid });
     else if (oid && type === 'advance') record = await db.collection('staff_advances').findOne({ _id: oid });
+    else if (oid && type === 'pf_withdrawal') record = await db.collection('pf_withdrawals').findOne({ _id: oid });
 
     if (!record) {
       html = `<div class="vcard bad"><div class="vicon">&#10060;</div><h2>Invalid ID Card</h2><p>This QR code does not match any active record. If you believe this is an error, please contact the school office.</p></div>`;
@@ -2366,6 +2522,18 @@ app.get('/verify-id', async (req, res) => {
         <div class="vicon">&#128181;</div>
         <h2>${escHtml(record.staff_name)}</h2>
         <div class="vbadge ok">&#9989; Genuine ICA Advance Slip</div>
+        <table class="vtbl">
+          <tr><td>Slip No.</td><td><b>${escHtml(record.slip_no)}</b></td></tr>
+          <tr><td>Amount</td><td>Rs. ${(record.amount || 0).toLocaleString('en-IN')}</td></tr>
+          <tr><td>Date</td><td>${escHtml(new Date(record.date).toLocaleDateString('en-IN'))}</td></tr>
+        </table>
+      </div>`;
+    } else if (type === 'pf_withdrawal') {
+      const label = record.type === 'full_settlement' ? 'Full &amp; Final PF Settlement' : 'PF Withdrawal Slip';
+      html = `<div class="vcard good">
+        <div class="vicon">&#128176;</div>
+        <h2>${escHtml(record.staff_name)}</h2>
+        <div class="vbadge ok">&#9989; Genuine ICA ${label}</div>
         <table class="vtbl">
           <tr><td>Slip No.</td><td><b>${escHtml(record.slip_no)}</b></td></tr>
           <tr><td>Amount</td><td>Rs. ${(record.amount || 0).toLocaleString('en-IN')}</td></tr>

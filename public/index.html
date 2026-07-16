@@ -1581,7 +1581,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
             <div class="fg" style="max-width:140px;"><label>Duration (min)</label><input type="number" id="qp-duration" placeholder="e.g. 180"/></div>
             <div class="fg" style="max-width:140px;"><label>Total Marks</label><input type="number" id="qp-totalmarks" placeholder="e.g. 100"/></div>
           </div>
-          <div class="fg"><label>Instructions <span style="font-weight:400;color:var(--muted);">(printed at the top)</span></label><textarea id="qp-instructions" rows="2" placeholder="e.g. All questions are compulsory. Write neatly."></textarea></div>
+          <div class="fg"><label>Instructions <span style="font-weight:400;color:var(--muted);">(one instruction per line — each prints as its own numbered point)</span></label><textarea id="qp-instructions" rows="4" placeholder="All questions are compulsory.&#10;Write neatly and legibly.&#10;Read all questions carefully before answering."></textarea></div>
 
           <div id="qp-type-section">
             <label style="font-size:12.5px;font-weight:700;display:block;margin-bottom:8px;">Questions</label>
@@ -1949,6 +1949,18 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
           <div style="font-size:13px;font-weight:700;margin-bottom:8px;" id="pf-school-total-label">Total School Contribution: Rs. 0</div>
           <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Transaction No.</th><th>Employee</th><th>Month</th><th>Employee PF</th><th>School PF</th></tr></thead><tbody id="pf-school-body"><tr><td colspan="5" class="no-data">Loading...</td></tr></tbody></table></div>
         </div>
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">PF Balance, Withdrawal &amp; Full Settlement</div></div>
+          <p style="font-size:11.5px;color:var(--muted);margin-bottom:12px;">Select a staff member to see their live PF balance (employee + school contribution, minus anything withdrawn), let them withdraw part of it, or settle everything in full when they permanently leave.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <select class="fi" id="pfw-staff" style="min-width:220px;" onchange="loadPfBalance()"><option value="">Select staff...</option></select>
+          </div>
+          <div id="pfw-balance-box"></div>
+        </div>
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title">PF Withdrawal History</div></div>
+          <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Slip No.</th><th>Employee</th><th>Type</th><th>Amount</th><th>Date</th><th></th></tr></thead><tbody id="pfw-history-body"><tr><td colspan="6" class="no-data">Select a staff member above.</td></tr></tbody></table></div>
+        </div>
       </div>
 
       <div class="admin-panel" id="accpanel-receipt">
@@ -2004,8 +2016,8 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
             <div class="fg" style="max-width:220px;align-self:flex-end;"><button class="btn-vw" onclick="markAllStaffAttendance('present')">Mark All Present</button></div>
           </div>
           <div class="tbl-wrap"><table class="tbl">
-            <thead><tr><th>Staff</th><th>Type</th><th>Present</th><th>Half Day</th><th>Absent</th><th>Leave</th></tr></thead>
-            <tbody id="sat-sheet-body"><tr><td colspan="6" class="no-data">Select a date.</td></tr></tbody>
+            <thead><tr><th>Staff</th><th>Type</th><th>Present</th><th>Half Day</th><th>Absent</th><th>Leave</th><th>Leave Type</th></tr></thead>
+            <tbody id="sat-sheet-body"><tr><td colspan="7" class="no-data">Select a date.</td></tr></tbody>
           </table></div>
           <button class="btn-add" onclick="saveStaffAttendanceSheet()">Save Attendance</button>
         </div>
@@ -2021,6 +2033,22 @@ footer{background:var(--navy);color:rgba(255,255,255,.6);padding:52px 0 24px;}
           <div class="tbl-wrap"><table class="tbl">
             <thead><tr><th>Staff</th><th>Present</th><th>Absent</th><th>Leave</th><th>%</th><th>Suggested Net Salary</th></tr></thead>
             <tbody id="sat-report-body"><tr><td colspan="6" class="no-data">Select a month.</td></tr></tbody>
+          </table></div>
+        </div>
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title">Leave &amp; Attendance Overview</div>
+            <input type="date" id="lov-date" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;" onchange="loadLeaveOverview()"/>
+          </div>
+          <label style="font-size:12.5px;font-weight:700;display:block;margin-bottom:6px;">On Leave / Absent / Half-Day Today</label>
+          <div class="tbl-wrap" style="margin-bottom:16px;"><table class="tbl">
+            <thead><tr><th>Staff</th><th>Designation</th><th>Status</th><th>Leave Type</th></tr></thead>
+            <tbody id="lov-today-body"><tr><td colspan="4" class="no-data">Loading...</td></tr></tbody>
+          </table></div>
+          <label style="font-size:12.5px;font-weight:700;display:block;margin-bottom:6px;">This Month — By Staff</label>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Staff</th><th>Present</th><th>Half Day</th><th>Absent</th><th>Leave (by type)</th></tr></thead>
+            <tbody id="lov-month-body"><tr><td colspan="5" class="no-data">Loading...</td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -3146,7 +3174,7 @@ async function loadStaffDropdowns(){
     const r = await accGet('acc_list_staff');
     _staffList = r.data||[];
     const opts = '<option value="">Select staff...</option>' + _staffList.map(s=>`<option value="${esc(s.application_number)}">${esc(s.name)} (${esc(s.application_number)})</option>`).join('');
-    ['sal-staff','sal-hist-staff','slip-staff','pf-staff-filter'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts + (id!=='sal-hist-staff'?'':''); });
+    ['sal-staff','sal-hist-staff','slip-staff','pf-staff-filter','pfw-staff','adv-staff'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts + (id!=='sal-hist-staff'?'':''); });
   }catch(e){}
 }
 /* ═══════════════ ONE-CLICK BULK PAYROLL ═══════════════ */
@@ -3314,6 +3342,102 @@ async function loadSchoolPfLedger(month){
     body.innerHTML = list.length ? list.map(x=>`<tr><td style="font-family:monospace;font-size:11.5px;">${esc(x.transaction_no)}</td><td>${esc(x.staff_name)}</td><td>${esc(x.month)}</td><td>Rs. ${x.employee_pf_amount.toLocaleString('en-IN')}</td><td style="font-weight:700;color:#16a34a;">Rs. ${x.employer_pf_amount.toLocaleString('en-IN')}</td></tr>`).join('')
       : '<tr><td colspan="5" class="no-data">No school contributions recorded yet.</td></tr>';
   }catch(e){ body.innerHTML='<tr><td colspan="5" class="no-data">Error: '+esc(e.message)+'</td></tr>'; }
+}
+
+/* ═══════════════ PF WITHDRAWAL & FULL SETTLEMENT ═══════════════ */
+async function loadPfBalance(){
+  const appNo=document.getElementById('pfw-staff').value;
+  const box=document.getElementById('pfw-balance-box');
+  const histBody=document.getElementById('pfw-history-body');
+  if(!appNo){ box.innerHTML=''; histBody.innerHTML='<tr><td colspan="6" class="no-data">Select a staff member above.</td></tr>'; return; }
+  box.innerHTML='<p style="font-size:12px;color:var(--muted);">Loading...</p>';
+  try{
+    const r=await accGet('acc_get_pf_balance',{application_number:appNo});
+    const b=r.data;
+    const blocked=b.status==='blocked';
+    box.innerHTML=`
+      <div class="stat-grid" style="margin-bottom:14px;">
+        <div class="stat-card"><div class="stat-icon blue">&#128100;</div><div class="stat-num">Rs.${b.employee_total.toLocaleString('en-IN')}</div><div class="stat-label">Employee Contributed</div></div>
+        <div class="stat-card"><div class="stat-icon green">&#127970;</div><div class="stat-num">Rs.${b.employer_total.toLocaleString('en-IN')}</div><div class="stat-label">School Contributed</div></div>
+        <div class="stat-card"><div class="stat-icon amber">&#8617;</div><div class="stat-num">Rs.${b.withdrawn_total.toLocaleString('en-IN')}</div><div class="stat-label">Already Withdrawn</div></div>
+        <div class="stat-card"><div class="stat-icon teal">&#128176;</div><div class="stat-num">Rs.${b.balance.toLocaleString('en-IN')}</div><div class="stat-label">Current Balance</div></div>
+      </div>
+      ${blocked?'<p style="color:#dc2626;font-weight:700;font-size:13px;margin-bottom:10px;">&#9888; This staff record is BLOCKED (already settled / exited).</p>':`
+      <div class="fg-row" style="flex-wrap:wrap;align-items:flex-end;">
+        <div class="fg" style="max-width:160px;"><label>Withdraw Amount (Rs.)</label><input type="number" id="pfw-amount" max="${b.balance}"/></div>
+        <div class="fg"><label>Reason</label><input type="text" id="pfw-reason" placeholder="e.g. Medical emergency"/></div>
+        <div class="fg" style="max-width:180px;"><button class="btn-add" onclick="withdrawPf('${appNo}')">Withdraw &amp; Generate Slip</button></div>
+      </div>
+      <button class="btn-add" style="background:#991b1b;margin-top:6px;" onclick="fullPfSettlement('${appNo}')">&#9888; Full &amp; Final Settlement (Staff Exit — Blocks this staff)</button>
+      `}`;
+    loadPfWithdrawalHistory(appNo);
+  }catch(e){ box.innerHTML='<p style="color:#dc2626;font-size:12px;">Error: '+esc(e.message)+'</p>'; }
+}
+async function withdrawPf(appNo){
+  const amount=document.getElementById('pfw-amount').value;
+  const reason=document.getElementById('pfw-reason').value;
+  if(!amount){ toast('Enter an amount.'); return; }
+  showLoading('Processing withdrawal...');
+  try{
+    const r=await adm2('acc_add_pf_withdrawal',{application_number:appNo, amount, reason});
+    hideLoading(); toast('Withdrawal recorded! Opening slip...');
+    printPfWithdrawalSlip(r.data);
+    loadPfBalance();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function fullPfSettlement(appNo){
+  if(!confirm('This withdraws the ENTIRE remaining PF balance and BLOCKS this staff member (marks them as exited). This cannot be undone. Continue?')) return;
+  showLoading('Processing full settlement...');
+  try{
+    const r=await adm2('acc_full_pf_settlement',{application_number:appNo});
+    hideLoading(); toast('Full & Final Settlement complete! Staff has been blocked. Opening slip...');
+    printPfWithdrawalSlip(r.data);
+    loadPfBalance();
+  }catch(e){ hideLoading(); toast('Error: '+e.message); }
+}
+async function loadPfWithdrawalHistory(appNo){
+  const body=document.getElementById('pfw-history-body');
+  try{
+    const r=await accGet('acc_list_pf_withdrawals',{application_number:appNo});
+    const list=r.data||[];
+    body.innerHTML=list.length?list.map(w=>`<tr>
+      <td style="font-family:monospace;font-size:11.5px;">${esc(w.slip_no)}</td><td>${esc(w.staff_name)}</td>
+      <td>${w.type==='full_settlement'?'<b style="color:#dc2626;">Full Settlement</b>':'Partial'}</td>
+      <td>Rs. ${w.amount.toLocaleString('en-IN')}</td><td>${new Date(w.date).toLocaleDateString('en-IN')}</td>
+      <td><button class="btn-vw" onclick='printPfWithdrawalSlip(${JSON.stringify(w).replace(/'/g,"&apos;")})'>Print</button></td>
+    </tr>`).join(''):'<tr><td colspan="6" class="no-data">No withdrawals yet.</td></tr>';
+  }catch(e){ body.innerHTML='<tr><td colspan="6" class="no-data">Error loading history.</td></tr>'; }
+}
+function printPfWithdrawalSlip(w){
+  const isFull = w.type==='full_settlement';
+  const qr = w.id ? `<img src="${idCardQrUrl('pf_withdrawal',w.id)}" style="width:60px;height:60px;"/><div style="font-size:8px;color:#888;">Scan to verify</div>` : '';
+  const w2=window.open('','_blank');
+  w2.document.write(`<html><head><title>${isFull?'Full & Final PF Settlement':'PF Withdrawal Slip'}</title><style>
+    body{font-family:Arial,sans-serif;padding:40px;max-width:560px;margin:auto;}
+    h2{text-align:center;color:#0a1628;margin-bottom:4px;}
+    p.sub{text-align:center;color:#666;font-size:12px;margin-top:0;margin-bottom:24px;}
+    table{width:100%;border-collapse:collapse;margin-top:16px;}
+    td{padding:9px 6px;border-bottom:1px solid #eee;font-size:14px;}
+    td:first-child{color:#666;width:40%;}
+  </style></head><body>
+    <h2>IDEAL CHILDREN ACADEMY</h2>
+    <p class="sub">${isFull?'Full &amp; Final PF Settlement':'Provident Fund Withdrawal Slip'}</p>
+    <table>
+      <tr><td>Slip No.</td><td><b>${esc(w.slip_no)}</b></td></tr>
+      <tr><td>Employee Name</td><td>${esc(w.staff_name)}</td></tr>
+      <tr><td>Date</td><td>${new Date(w.date).toLocaleDateString('en-IN')}</td></tr>
+      <tr><td>Amount ${isFull?'(Full Balance)':''}</td><td><b>Rs. ${w.amount.toLocaleString('en-IN')}</b></td></tr>
+      ${w.advance_deduction?`<tr><td>Gross PF Balance</td><td>Rs. ${w.gross_pf_balance.toLocaleString('en-IN')}</td></tr><tr><td>Less: Outstanding Advance</td><td>- Rs. ${w.advance_deduction.toLocaleString('en-IN')}</td></tr>`:''}
+      <tr><td>Reason</td><td>${esc(w.reason||'-')}</td></tr>
+    </table>
+    <div style="text-align:center;margin-top:30px;">${qr}</div>
+    <div style="display:flex;justify-content:space-between;margin-top:50px;">
+      <div style="text-align:center;"><div style="border-top:1px solid #333;width:140px;padding-top:4px;font-size:11px;">Employee Signature</div></div>
+      <div style="text-align:center;"><div style="border-top:1px solid #333;width:140px;padding-top:4px;font-size:11px;">Accountant Signature</div></div>
+    </div>
+    <div style="text-align:center;margin-top:24px;"><button onclick="window.print()" style="padding:10px 24px;background:#0a1628;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print</button></div>
+  </body></html>`);
+  w2.document.close(); w2.focus();
 }
 
 // ── Admission Receipt Search ──
@@ -3568,38 +3692,75 @@ function exportAdvancesCSV(){
 async function initStaffAttendancePanel(){
   document.getElementById('sat-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('sat-report-month').value = new Date().toISOString().slice(0,7);
+  document.getElementById('lov-date').value = new Date().toISOString().slice(0,10);
   await loadStaffAttendanceSheet();
+  await loadLeaveOverview();
 }
+async function loadLeaveOverview(){
+  const date=document.getElementById('lov-date').value;
+  const todayBody=document.getElementById('lov-today-body');
+  const monthBody=document.getElementById('lov-month-body');
+  todayBody.innerHTML='<tr><td colspan="4" class="no-data">Loading...</td></tr>';
+  monthBody.innerHTML='<tr><td colspan="5" class="no-data">Loading...</td></tr>';
+  try{
+    const r=await accGet('acc_leave_overview',{date});
+    const d=r.data;
+    const statusColor={leave:'#d97706',absent:'#dc2626',half_day:'#2563eb'};
+    todayBody.innerHTML = d.today_on_leave.length ? d.today_on_leave.map(x=>`<tr>
+      <td>${esc(x.staff_name)}</td><td>${esc(x.position||'-')}</td>
+      <td style="color:${statusColor[x.status]||'#333'};font-weight:700;text-transform:capitalize;">${esc((x.status||'').replace('_',' '))}</td>
+      <td>${esc(x.leave_type||'-')}</td>
+    </tr>`).join('') : '<tr><td colspan="4" class="no-data">Everyone is present today. &#127881;</td></tr>';
+    monthBody.innerHTML = d.monthly.length ? d.monthly.map(m=>{
+      const leaveTypesStr = Object.entries(m.leave_types||{}).map(([t,c])=>`${esc(t)}: ${c}`).join(', ') || '-';
+      return `<tr><td>${esc(m.staff_name)}</td><td>${m.present}</td><td>${m.half_day}</td><td>${m.absent}</td><td style="font-size:11.5px;">${leaveTypesStr}</td></tr>`;
+    }).join('') : '<tr><td colspan="5" class="no-data">No attendance marked this month yet.</td></tr>';
+  }catch(e){
+    todayBody.innerHTML='<tr><td colspan="4" class="no-data">Error: '+esc(e.message)+'</td></tr>';
+    monthBody.innerHTML='';
+  }
+}
+let _leavePolicyCache=[];
 async function loadStaffAttendanceSheet(){
   const date=document.getElementById('sat-date').value;
   const body=document.getElementById('sat-sheet-body');
-  if(!date){ body.innerHTML='<tr><td colspan="6" class="no-data">Select a date.</td></tr>'; return; }
-  body.innerHTML='<tr><td colspan="6" class="no-data">Loading...</td></tr>';
+  if(!date){ body.innerHTML='<tr><td colspan="7" class="no-data">Select a date.</td></tr>'; return; }
+  body.innerHTML='<tr><td colspan="7" class="no-data">Loading...</td></tr>';
   try{
     const r=await accGet('acc_list_staff',{});
     _satStaff=(r.data||[]).filter(s=>(s.status||'active')==='active');
     const attR=await accGet('get_staff_attendance',{date});
-    const existing={}; (attR.data||[]).forEach(x=>{ existing[x.application_number]=x.status; });
-    if(!_satStaff.length){ body.innerHTML='<tr><td colspan="6" class="no-data">No active staff found. Add staff under Staff ID Cards first.</td></tr>'; return; }
+    const existing={}; (attR.data||[]).forEach(x=>{ existing[x.application_number]={status:x.status, leave_type:x.leave_type}; });
+    try{ const lpR=await accGet('acc_get_leave_policy',{}); _leavePolicyCache=lpR.data||[]; }catch(e){}
+    if(!_satStaff.length){ body.innerHTML='<tr><td colspan="7" class="no-data">No active staff found. Add staff under Staff ID Cards first.</td></tr>'; return; }
+    const leaveOpts = _leavePolicyCache.length ? _leavePolicyCache.map(p=>`<option>${esc(p.type)}</option>`).join('') : '<option>Unspecified</option>';
     body.innerHTML=_satStaff.map(s=>{
-      const st=existing[s.application_number]||'present';
+      const ex=existing[s.application_number]||{}; const st=ex.status||'present';
       return `<tr>
         <td>${esc(s.name)}</td><td>${s.staff_type==='non_teaching'?'Non-Teaching':'Teaching'}</td>
-        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="present" ${st==='present'?'checked':''}/></td>
-        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="half_day" ${st==='half_day'?'checked':''}/></td>
-        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="absent" ${st==='absent'?'checked':''}/></td>
-        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="leave" ${st==='leave'?'checked':''}/></td>
+        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="present" ${st==='present'?'checked':''} onchange="satToggleLeaveType('${s.id}')"/></td>
+        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="half_day" ${st==='half_day'?'checked':''} onchange="satToggleLeaveType('${s.id}')"/></td>
+        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="absent" ${st==='absent'?'checked':''} onchange="satToggleLeaveType('${s.id}')"/></td>
+        <td style="text-align:center;"><input type="radio" name="sat-${s.id}" value="leave" ${st==='leave'?'checked':''} onchange="satToggleLeaveType('${s.id}')"/></td>
+        <td><select id="sat-ltype-${s.id}" style="padding:4px 6px;font-size:11.5px;border:1px solid var(--border);border-radius:5px;" ${st!=='leave'?'disabled':''}>${leaveOpts}</select></td>
       </tr>`;
     }).join('');
+    // Pre-select whichever leave type was already saved for anyone currently on leave.
+    _satStaff.forEach(s=>{ const ex=existing[s.application_number]; if(ex && ex.status==='leave' && ex.leave_type){ const sel=document.getElementById('sat-ltype-'+s.id); if(sel) sel.value=ex.leave_type; } });
   }catch(e){
     const isAuth = /unauthor/i.test(e.message);
-    body.innerHTML='<tr><td colspan="6" class="no-data">'+(isAuth?'Your Accounts session has expired — please log in again.':'Error: '+esc(e.message))+(isAuth?' <button class="btn-vw" onclick="doAccLogout();showAccLogin();">Log In Again</button>':'')+'</td></tr>';
+    body.innerHTML='<tr><td colspan="7" class="no-data">'+(isAuth?'Your Accounts session has expired — please log in again.':'Error: '+esc(e.message))+(isAuth?' <button class="btn-vw" onclick="doAccLogout();showAccLogin();">Log In Again</button>':'')+'</td></tr>';
   }
+}
+function satToggleLeaveType(sid){
+  const sel=document.getElementById('sat-ltype-'+sid); if(!sel) return;
+  const checked=document.querySelector(`input[name="sat-${sid}"]:checked`);
+  sel.disabled = !(checked && checked.value==='leave');
 }
 function markAllStaffAttendance(status){
   _satStaff.forEach(s=>{
     const radio=document.querySelector(`input[name="sat-${s.id}"][value="${status}"]`);
-    if(radio) radio.checked=true;
+    if(radio){ radio.checked=true; satToggleLeaveType(s.id); }
   });
 }
 async function saveStaffAttendanceSheet(){
@@ -3607,7 +3768,9 @@ async function saveStaffAttendanceSheet(){
   if(!date){ toast('Select a date first.'); return; }
   const records=_satStaff.map(s=>{
     const checked=document.querySelector(`input[name="sat-${s.id}"]:checked`);
-    return { application_number:s.application_number, staff_name:s.name, status: checked?checked.value:'present' };
+    const status = checked?checked.value:'present';
+    const ltypeSel=document.getElementById('sat-ltype-'+s.id);
+    return { application_number:s.application_number, staff_name:s.name, status, leave_type: status==='leave'&&ltypeSel?ltypeSel.value:undefined };
   });
   showLoading('Saving attendance...');
   try{
@@ -5037,22 +5200,20 @@ async function loadThemeOnInit(){
       const li=document.getElementById('nav-logo-icon');
       if(li) li.innerHTML = `<img src="${esc(d.site_logo_url)}" alt="Logo"/>`;
     }
-    // Hero visual — avoid ever mixing the illustrated placeholder with a real photo (that's what
-    // caused the mismatched cartoon+real-photo look). Only show the small floating photo when
-    // there's ALSO a real main photo behind it; otherwise a single real photo just becomes the
-    // main hero image on its own (replacing the illustration entirely).
+    // Hero visual — NEVER layer two images together (that's what caused the repeated
+    // cartoon+real-photo overlap). Exactly one image shows at a time: Students Photo takes
+    // priority if set, otherwise Building Photo, otherwise the default illustration.
     const heroBuildingEl = document.getElementById('pub-hero-building');
     const heroPlaceholderEl = document.getElementById('hero-building-placeholder');
     const heroStudentsEl = document.getElementById('pub-hero-students');
-    if(d.hero_building_url){
-      if(heroBuildingEl){ heroBuildingEl.src=d.hero_building_url; heroBuildingEl.style.display='block'; }
+    if(heroStudentsEl){ heroStudentsEl.style.display='none'; heroStudentsEl.src=''; } // this floating overlay is retired — a single clean image is used instead
+    const mainHeroPhoto = d.hero_students_url || d.hero_building_url || '';
+    if(mainHeroPhoto){
+      if(heroBuildingEl){ heroBuildingEl.src=mainHeroPhoto; heroBuildingEl.style.display='block'; }
       if(heroPlaceholderEl) heroPlaceholderEl.style.display='none';
-      if(d.hero_students_url && heroStudentsEl){ heroStudentsEl.src=d.hero_students_url; heroStudentsEl.style.display='block'; }
-    } else if(d.hero_students_url){
-      // No real building photo yet — use the students photo as the main image instead of
-      // floating it over the cartoon illustration.
-      if(heroBuildingEl){ heroBuildingEl.src=d.hero_students_url; heroBuildingEl.style.display='block'; }
-      if(heroPlaceholderEl) heroPlaceholderEl.style.display='none';
+    } else {
+      if(heroBuildingEl) heroBuildingEl.style.display='none';
+      if(heroPlaceholderEl) heroPlaceholderEl.style.display='flex';
     }
   }catch(e){}
 }
@@ -7845,7 +8006,10 @@ function printQuestionPaper(p){
     .qp-head p{margin:2px 0;font-size:11px;color:#555;}
     .qp-meta{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:6px;}
     .qp-title{text-align:center;font-size:16px;font-weight:700;text-decoration:underline;margin:14px 0;}
-    .qp-instr{font-size:11.5px;color:#555;background:#f8fafc;border:1px solid #eee;border-radius:6px;padding:8px 12px;margin-bottom:18px;}
+    .qp-instr{font-size:11.5px;color:#555;background:#f8fafc;border:1px solid #eee;border-radius:6px;padding:10px 16px;margin-bottom:18px;}
+    .qp-instr b{display:block;margin-bottom:4px;color:#333;}
+    .qp-instr ol{margin:0;padding-left:18px;}
+    .qp-instr li{margin-bottom:3px;}
     .qp-q{margin-bottom:14px;font-size:13.5px;line-height:1.6;}
     .qp-qtext{}
     .qp-marks{float:right;color:#666;font-size:11.5px;}
@@ -7855,7 +8019,7 @@ function printQuestionPaper(p){
     <div class="qp-head"><h1>IDEAL CHILDREN ACADEMY</h1><p>Batrauliya, Paharpur, East Champaran, Bihar - 845458</p></div>
     <div class="qp-meta"><span>Class: ${esc(p.class_name)}</span><span>Subject: ${esc(p.subject)}</span><span>Time: ${p.duration_minutes?p.duration_minutes+' min':'-'}</span><span>Max Marks: ${p.total_marks||'-'}</span></div>
     <div class="qp-title">${esc(p.title)}${p.exam_name?(' — '+esc(p.exam_name)):''}${p.group_name?(' ('+esc(p.group_name)+')'):''}</div>
-    ${p.instructions?`<div class="qp-instr"><b>Instructions:</b> ${esc(p.instructions)}</div>`:''}
+    ${p.instructions?`<div class="qp-instr"><b>Instructions:</b><ol>${p.instructions.split('\n').map(line=>line.trim()).filter(Boolean).map(line=>`<li>${esc(line)}</li>`).join('')}</ol></div>`:''}
     ${questionsHtml || '<p style="text-align:center;color:#999;">No questions added.</p>'}
     <div class="no-print" style="text-align:center;margin-top:24px;"><button onclick="window.print()" style="padding:10px 24px;background:#0a1628;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Print</button></div>
   </body></html>`);
